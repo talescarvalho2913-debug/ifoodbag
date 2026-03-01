@@ -288,7 +288,6 @@ function extractGatewayEvent(gateway, body = {}) {
                 utm_medium: String(body?.utm_medium || metadata?.utm_medium || '').trim(),
                 utm_campaign: String(body?.utm_campaign || metadata?.utm_campaign || '').trim(),
                 utm_term: String(body?.utm_term || metadata?.utm_term || '').trim(),
-                utm_adset: String(body?.utm_adset || metadata?.utm_adset || metadata?.adset || '').trim(),
                 utm_content: String(body?.utm_content || metadata?.utm_content || '').trim(),
                 src: String(body?.src || metadata?.src || '').trim(),
                 sck: String(body?.sck || metadata?.sck || '').trim(),
@@ -373,7 +372,6 @@ function extractGatewayEvent(gateway, body = {}) {
                 utm_medium: String(tracking?.utm_medium || metadata?.utm_medium || '').trim(),
                 utm_campaign: String(tracking?.utm_campaign || metadata?.utm_campaign || '').trim(),
                 utm_term: String(tracking?.utm_term || metadata?.utm_term || '').trim(),
-                utm_adset: String(tracking?.utm_adset || metadata?.utm_adset || metadata?.adset || '').trim(),
                 utm_content: String(tracking?.utm_content || metadata?.utm_content || '').trim(),
                 src: String(tracking?.src || metadata?.src || '').trim(),
                 sck: String(tracking?.sck || metadata?.sck || '').trim(),
@@ -455,7 +453,6 @@ function extractGatewayEvent(gateway, body = {}) {
                 utm_medium: String(metadata?.utm_medium || '').trim(),
                 utm_campaign: String(metadata?.utm_campaign || '').trim(),
                 utm_term: String(metadata?.utm_term || '').trim(),
-                utm_adset: String(metadata?.utm_adset || metadata?.adset || '').trim(),
                 utm_content: String(metadata?.utm_content || '').trim(),
                 src: String(metadata?.src || '').trim(),
                 sck: String(metadata?.sck || '').trim(),
@@ -935,20 +932,12 @@ module.exports = async (req, res) => {
                     ''
                 ),
                 utm_term: leadData?.utm_term || leadUtm?.utm_term || evt.fallbackUtm?.utm_term || evt.fallbackUtm?.term || '',
-                utm_adset: (
-                    leadUtm?.utm_adset ||
-                    leadUtm?.utm_adset_name ||
-                    leadUtm?.adset ||
-                    leadUtm?.adset_name ||
-                    evt.fallbackUtm?.utm_adset ||
-                    evt.fallbackUtm?.adset ||
-                    evt.fallbackUtm?.adset_name ||
-                    ''
-                ),
                 utm_content: (
                     leadData?.utm_content ||
                     leadUtm?.utm_content ||
                     evt.fallbackUtm?.utm_content ||
+                    evt.fallbackUtm?.utm_adset ||
+                    evt.fallbackUtm?.adset ||
                     evt.fallbackUtm?.content ||
                     ''
                 )
@@ -963,13 +952,12 @@ module.exports = async (req, res) => {
                 ''
             ),
             adset: (
-                leadUtm?.utm_adset ||
-                leadUtm?.utm_adset_name ||
-                leadUtm?.adset ||
-                leadUtm?.adset_name ||
+                leadData?.utm_content ||
+                leadUtm?.utm_content ||
+                evt.fallbackUtm?.utm_content ||
                 evt.fallbackUtm?.utm_adset ||
                 evt.fallbackUtm?.adset ||
-                evt.fallbackUtm?.adset_name ||
+                evt.fallbackUtm?.content ||
                 ''
             ),
             isUpsell: upsellEvent

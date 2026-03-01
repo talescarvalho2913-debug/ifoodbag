@@ -1340,22 +1340,14 @@ module.exports = async (req, res) => {
                 utm_source: rawBody?.utm?.utm_source || rawBody?.utm_source || '',
                 utm_campaign: rawBody?.utm?.utm_campaign || rawBody?.utm_campaign || '',
                 utm_term: rawBody?.utm?.utm_term || rawBody?.utm_term || '',
-                utm_adset: (
-                    rawBody?.utm?.utm_adset ||
-                    rawBody?.utm?.utm_adset_name ||
-                    rawBody?.utm?.adset ||
-                    rawBody?.utm?.adset_name ||
-                    rawBody?.utm_adset ||
-                    ''
-                ),
                 utm_content: rawBody?.utm?.utm_content || rawBody?.utm_content || '',
                 campaign: rawBody?.utm?.utm_campaign || rawBody?.utm_campaign || '',
                 adset: (
                     rawBody?.utm?.utm_adset ||
-                    rawBody?.utm?.utm_adset_name ||
                     rawBody?.utm?.adset ||
-                    rawBody?.utm?.adset_name ||
+                    rawBody?.utm?.utm_content ||
                     rawBody?.utm_adset ||
+                    rawBody?.utm_content ||
                     ''
                 ),
                 gateway,

@@ -823,10 +823,11 @@ module.exports = async (req, res) => {
                         utm_medium: latestLead?.utm_medium || leadUtm?.utm_medium || '',
                         utm_campaign: latestLead?.utm_campaign || leadUtm?.utm_campaign || leadUtm?.campaign || leadUtm?.sck || '',
                         utm_term: latestLead?.utm_term || leadUtm?.utm_term || leadUtm?.term || '',
-                        utm_adset: leadUtm?.utm_adset || leadUtm?.utm_adset_name || leadUtm?.adset || leadUtm?.adset_name || '',
                         utm_content: (
                             latestLead?.utm_content ||
                             leadUtm?.utm_content ||
+                            leadUtm?.utm_adset ||
+                            leadUtm?.adset ||
                             leadUtm?.content ||
                             ''
                         )
@@ -834,10 +835,11 @@ module.exports = async (req, res) => {
                     source: latestLead?.utm_source || leadUtm?.utm_source || leadUtm?.src || '',
                     campaign: latestLead?.utm_campaign || leadUtm?.utm_campaign || leadUtm?.campaign || leadUtm?.sck || '',
                     adset: (
+                        latestLead?.utm_content ||
+                        leadUtm?.utm_content ||
                         leadUtm?.utm_adset ||
-                        leadUtm?.utm_adset_name ||
                         leadUtm?.adset ||
-                        leadUtm?.adset_name ||
+                        leadUtm?.content ||
                         ''
                     ),
                     isUpsell: upsellEvent

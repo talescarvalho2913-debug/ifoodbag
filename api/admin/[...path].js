@@ -696,24 +696,14 @@ function mapLeadReadable(row) {
         payloadUtm?.term,
         payload?.term
     );
-    const utmAd = resolveTrackingText(
+    const utmAdset = resolveTrackingText(
         row?.utm_content,
         payloadUtm?.utm_content,
         payload?.utm_content,
         payloadUtm?.content,
         payload?.content,
-        payloadUtm?.utm_ad,
-        payload?.utm_ad,
-        payloadUtm?.ad,
-        payload?.ad,
-        payloadUtm?.ad_name,
-        payload?.ad_name
-    );
-    const utmAdset = resolveTrackingText(
         payloadUtm?.utm_adset,
         payload?.utm_adset,
-        payloadUtm?.utm_adset_name,
-        payload?.utm_adset_name,
         payloadUtm?.adset,
         payload?.adset,
         payloadUtm?.adset_name,
@@ -747,8 +737,6 @@ function mapLeadReadable(row) {
         utm_campaign_name: sanitizeCampaignName(utmCampaign),
         utm_term: utmTerm,
         utm_term_label: prettifyTrafficLabel(utmTerm),
-        utm_ad: utmAd,
-        utm_ad_name: prettifyTrafficLabel(utmAd),
         utm_adset: utmAdset,
         utm_adset_label: sanitizeAdsetName(utmAdset),
         utm_adset_name: sanitizeAdsetName(utmAdset),
@@ -1482,13 +1470,11 @@ async function pushcutTest(req, res) {
         campaign: 'Campanha Teste',
         utm_campaign: 'Campanha Teste',
         adset: 'Conjunto Teste',
-        utm_adset: 'Conjunto Teste',
-        utm_content: 'Anuncio Teste',
+        utm_content: 'Conjunto Teste',
         utm: {
             utm_source: 'meta',
             utm_campaign: 'Campanha Teste',
-            utm_adset: 'Conjunto Teste',
-            utm_content: 'Anuncio Teste'
+            utm_content: 'Conjunto Teste'
         },
         shippingName: 'Envio Padrao iFood',
         created_at: new Date().toISOString()
@@ -1938,10 +1924,11 @@ async function pixReconcile(req, res) {
                         utm_medium: leadData?.utm_medium || leadUtm?.utm_medium || '',
                         utm_campaign: leadData?.utm_campaign || leadUtm?.utm_campaign || leadUtm?.campaign || leadUtm?.sck || '',
                         utm_term: leadData?.utm_term || leadUtm?.utm_term || leadUtm?.term || '',
-                        utm_adset: leadUtm?.utm_adset || leadUtm?.utm_adset_name || leadUtm?.adset || leadUtm?.adset_name || '',
                         utm_content: (
                             leadData?.utm_content ||
                             leadUtm?.utm_content ||
+                            leadUtm?.utm_adset ||
+                            leadUtm?.adset ||
                             leadUtm?.content ||
                             ''
                         )
@@ -1949,10 +1936,11 @@ async function pixReconcile(req, res) {
                     source: leadData?.utm_source || leadUtm?.utm_source || leadUtm?.src || '',
                     campaign: leadData?.utm_campaign || leadUtm?.utm_campaign || leadUtm?.campaign || leadUtm?.sck || '',
                     adset: (
+                        leadData?.utm_content ||
+                        leadUtm?.utm_content ||
                         leadUtm?.utm_adset ||
-                        leadUtm?.utm_adset_name ||
                         leadUtm?.adset ||
-                        leadUtm?.adset_name ||
+                        leadUtm?.content ||
                         ''
                     ),
                     isUpsell

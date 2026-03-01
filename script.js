@@ -5523,16 +5523,6 @@ function captureUtmParams() {
         utm_campaign: params.get('utm_campaign') || current.utm_campaign,
         utm_term: params.get('utm_term') || current.utm_term,
         utm_content: params.get('utm_content') || current.utm_content,
-        utm_adset:
-            params.get('utm_adset') ||
-            params.get('adset') ||
-            params.get('adset_name') ||
-            current.utm_adset,
-        utm_ad:
-            params.get('utm_ad') ||
-            params.get('ad') ||
-            params.get('ad_name') ||
-            current.utm_ad,
         gclid: params.get('gclid') || current.gclid,
         fbclid: params.get('fbclid') || current.fbclid,
         ttclid: params.get('ttclid') || current.ttclid,
