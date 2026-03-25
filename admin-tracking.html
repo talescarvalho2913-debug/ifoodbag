@@ -43,7 +43,7 @@
       <header class="admin-topbar">
         <div>
           <h1>Tracking</h1>
-          <p>Configure o Pixel do Facebook no navegador (somente Pixel ID), selecione eventos e salve.</p>
+          <p>Configure os pixels Meta e TikTok no navegador, selecione os eventos e salve sem misturar as atribuicoes.</p>
         </div>
         <div class="admin-topbar-actions">
           <button id="admin-save" class="btn-primary" type="button">Salvar configuracoes</button>
@@ -65,8 +65,8 @@
       <div id="admin-panel" class="admin-panel hidden">
         <section id="admin-tracking" class="admin-section admin-section--card">
           <div class="admin-section-header">
-            <h2>Pixel do Facebook</h2>
-            <span class="admin-chip">Tracking</span>
+            <h2>Pixel do Meta</h2>
+            <span class="admin-chip">Facebook Ads</span>
           </div>
           <p class="admin-hint">Tracking 100% browser-side. Informe apenas o Pixel ID e escolha os eventos.</p>
           <div class="admin-grid">
@@ -90,13 +90,42 @@
 
         <section class="admin-section admin-section--card">
           <div class="admin-section-header">
-            <h2>Teste rapido</h2>
-            <span class="admin-chip">Pixel</span>
+            <h2>Pixel do TikTok</h2>
+            <span class="admin-chip">TikTok Ads</span>
           </div>
-          <p class="admin-hint">Dispara um evento Lead para validar se o Pixel esta recebendo os dados.</p>
+          <p class="admin-hint">Tracking browser-side com Pixel Code. Use a mesma logica do Meta, com roteamento automatico por origem.</p>
+          <div class="admin-grid">
+            <label class="admin-switch">
+              <input type="checkbox" id="tiktok-pixel-enabled" />
+              <span>Pixel ativo</span>
+            </label>
+            <div class="input-group">
+              <input type="text" id="tiktok-pixel-id" class="floating-input" placeholder=" " />
+              <label for="tiktok-pixel-id" class="floating-label">Pixel Code</label>
+            </div>
+            <div class="admin-checkboxes">
+              <label><input type="checkbox" id="tiktok-pixel-event-page" /> PageView automatico (base code)</label>
+              <label><input type="checkbox" id="tiktok-pixel-event-quiz" /> ViewContent (/processando)</label>
+              <label><input type="checkbox" id="tiktok-pixel-event-lead" /> SubmitForm</label>
+              <label><input type="checkbox" id="tiktok-pixel-event-checkout" /> InitiateCheckout (/pix) + AddPaymentInfo (/checkout)</label>
+              <label><input type="checkbox" id="tiktok-pixel-event-purchase" /> Purchase (PIX pago)</label>
+            </div>
+          </div>
+        </section>
+
+        <section class="admin-section admin-section--card">
+          <div class="admin-section-header">
+            <h2>Teste rapido</h2>
+            <span class="admin-chip">Pixels</span>
+          </div>
+          <p class="admin-hint">Dispara eventos de teste separados para validar Meta e TikTok sem cruzar os pixels.</p>
           <div class="admin-inline-actions">
-            <button id="admin-test-pixel" class="btn-secondary" type="button">Enviar evento teste</button>
+            <button id="admin-test-pixel" class="btn-secondary" type="button">Testar Meta</button>
             <span id="admin-test-pixel-status" class="admin-muted"></span>
+          </div>
+          <div class="admin-inline-actions">
+            <button id="admin-test-tiktok-pixel" class="btn-secondary" type="button">Testar TikTok</button>
+            <span id="admin-test-tiktok-pixel-status" class="admin-muted"></span>
           </div>
         </section>
       </div>
@@ -105,7 +134,7 @@
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
-  <script src="/script.js?v=8.3" defer></script>
+  <script src="/script.js?v=8.9" defer></script>
 </body>
 </html>
 

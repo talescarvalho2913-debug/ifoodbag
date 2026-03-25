@@ -474,12 +474,21 @@ function sanitizeSettingsForAdmin(settingsData = {}) {
     const source = settingsData && typeof settingsData === 'object' ? settingsData : {};
     const payload = JSON.parse(JSON.stringify(source));
     const safePixel = payload.pixel && typeof payload.pixel === 'object' ? payload.pixel : {};
+    const safeTikTokPixel = payload.tiktokPixel && typeof payload.tiktokPixel === 'object' ? payload.tiktokPixel : {};
     payload.pixel = {
         enabled: !!safePixel.enabled,
         id: String(safePixel.id || '').trim(),
         events: {
             ...defaultSettings.pixel.events,
             ...asObject(safePixel.events)
+        }
+    };
+    payload.tiktokPixel = {
+        enabled: !!safeTikTokPixel.enabled,
+        id: String(safeTikTokPixel.id || '').trim(),
+        events: {
+            ...defaultSettings.tiktokPixel.events,
+            ...asObject(safeTikTokPixel.events)
         }
     };
     payload.utmfy = payload.utmfy || {};
@@ -1920,6 +1929,7 @@ async function settings(req, res) {
         };
 
         const bodyPixel = body.pixel && typeof body.pixel === 'object' ? body.pixel : {};
+        const bodyTikTokPixel = body.tiktokPixel && typeof body.tiktokPixel === 'object' ? body.tiktokPixel : {};
         const currentUtmfy = currentSaved?.utmfy || {};
         const currentPushcut = currentSaved?.pushcut || {};
         const bodyUtmfy = body.utmfy && typeof body.utmfy === 'object' ? body.utmfy : {};
@@ -1934,6 +1944,14 @@ async function settings(req, res) {
                 events: {
                     ...defaultSettings.pixel.events,
                     ...(bodyPixel?.events || {})
+                }
+            },
+            tiktokPixel: {
+                enabled: !!bodyTikTokPixel.enabled,
+                id: String(bodyTikTokPixel.id || '').trim(),
+                events: {
+                    ...defaultSettings.tiktokPixel.events,
+                    ...(bodyTikTokPixel?.events || {})
                 }
             },
             utmfy: {

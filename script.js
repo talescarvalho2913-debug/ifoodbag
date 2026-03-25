@@ -102,6 +102,7 @@ const STORAGE_KEYS = {
     leadSession: 'ifoodbag.leadSession',
     utm: 'ifoodbag.utm',
     pixelConfig: 'ifoodbag.pixelConfig',
+    tiktokPixelConfig: 'ifoodbag.tiktokPixelConfig',
     coupon: 'ifoodbag.coupon',
     directCheckout: 'ifoodbag.directCheckout',
     vslCompleted: 'ifoodbag.vslCompleted',
@@ -120,6 +121,8 @@ const state = {
     apiSessionAt: 0,
     pixelConfig: null,
     pixelConfigAt: 0,
+    tiktokPixelConfig: null,
+    tiktokPixelConfigAt: 0,
     siteConfig: null,
     siteConfigAt: 0,
     toastTimeout: null,
@@ -3394,6 +3397,13 @@ function initAdmin() {
     const pixelEventLead = document.getElementById('pixel-event-lead');
     const pixelEventCheckout = document.getElementById('pixel-event-checkout');
     const pixelEventPurchase = document.getElementById('pixel-event-purchase');
+    const tiktokPixelEnabled = document.getElementById('tiktok-pixel-enabled');
+    const tiktokPixelId = document.getElementById('tiktok-pixel-id');
+    const tiktokPixelEventPage = document.getElementById('tiktok-pixel-event-page');
+    const tiktokPixelEventQuiz = document.getElementById('tiktok-pixel-event-quiz');
+    const tiktokPixelEventLead = document.getElementById('tiktok-pixel-event-lead');
+    const tiktokPixelEventCheckout = document.getElementById('tiktok-pixel-event-checkout');
+    const tiktokPixelEventPurchase = document.getElementById('tiktok-pixel-event-purchase');
 
     const utmfyEnabled = document.getElementById('utmfy-enabled');
     const utmfyEndpoint = document.getElementById('utmfy-endpoint');
@@ -3486,6 +3496,8 @@ function initAdmin() {
     const adminPage = document.body.getAttribute('data-admin') || '';
     const testPixelBtn = document.getElementById('admin-test-pixel');
     const testPixelStatus = document.getElementById('admin-test-pixel-status');
+    const testTikTokPixelBtn = document.getElementById('admin-test-tiktok-pixel');
+    const testTikTokPixelStatus = document.getElementById('admin-test-tiktok-pixel-status');
     const testUtmfyBtn = document.getElementById('admin-test-utmfy');
     const testUtmfyStatus = document.getElementById('admin-test-utmfy-status');
     const saleUtmfyBtn = document.getElementById('admin-sale-utmfy');
@@ -3630,7 +3642,20 @@ function initAdmin() {
     ensurePushcutTemplateFields();
 
     const hasPixelForm = !!(
-        pixelEnabled || pixelId || pixelEventPage || pixelEventQuiz || pixelEventLead || pixelEventCheckout || pixelEventPurchase
+        pixelEnabled ||
+        pixelId ||
+        pixelEventPage ||
+        pixelEventQuiz ||
+        pixelEventLead ||
+        pixelEventCheckout ||
+        pixelEventPurchase ||
+        tiktokPixelEnabled ||
+        tiktokPixelId ||
+        tiktokPixelEventPage ||
+        tiktokPixelEventQuiz ||
+        tiktokPixelEventLead ||
+        tiktokPixelEventCheckout ||
+        tiktokPixelEventPurchase
     );
     const hasUtmfyForm = !!(
         utmfyEnabled ||
@@ -3792,6 +3817,13 @@ function initAdmin() {
             if (pixelEventLead) pixelEventLead.checked = data.pixel?.events?.lead !== false;
             if (pixelEventCheckout) pixelEventCheckout.checked = data.pixel?.events?.checkout !== false;
             if (pixelEventPurchase) pixelEventPurchase.checked = data.pixel?.events?.purchase !== false;
+            if (tiktokPixelEnabled) tiktokPixelEnabled.checked = !!data.tiktokPixel?.enabled;
+            if (tiktokPixelId) tiktokPixelId.value = data.tiktokPixel?.id || '';
+            if (tiktokPixelEventPage) tiktokPixelEventPage.checked = data.tiktokPixel?.events?.page_view !== false;
+            if (tiktokPixelEventQuiz) tiktokPixelEventQuiz.checked = data.tiktokPixel?.events?.quiz_view !== false;
+            if (tiktokPixelEventLead) tiktokPixelEventLead.checked = data.tiktokPixel?.events?.lead !== false;
+            if (tiktokPixelEventCheckout) tiktokPixelEventCheckout.checked = data.tiktokPixel?.events?.checkout !== false;
+            if (tiktokPixelEventPurchase) tiktokPixelEventPurchase.checked = data.tiktokPixel?.events?.purchase !== false;
         }
 
         if (hasUtmfyForm) {
@@ -3887,6 +3919,17 @@ function initAdmin() {
                     lead: pixelEventLead?.checked !== false,
                     purchase: pixelEventPurchase?.checked !== false,
                     checkout: pixelEventCheckout?.checked !== false
+                }
+            };
+            payload.tiktokPixel = {
+                enabled: !!tiktokPixelEnabled?.checked,
+                id: tiktokPixelId?.value?.trim() || '',
+                events: {
+                    page_view: tiktokPixelEventPage?.checked !== false,
+                    quiz_view: tiktokPixelEventQuiz?.checked !== false,
+                    lead: tiktokPixelEventLead?.checked !== false,
+                    purchase: tiktokPixelEventPurchase?.checked !== false,
+                    checkout: tiktokPixelEventCheckout?.checked !== false
                 }
             };
         }
@@ -4004,6 +4047,22 @@ function initAdmin() {
         firePixelEvent('Lead', { source: 'admin_test' });
         if (testPixelStatus) testPixelStatus.textContent = 'Evento Lead enviado.';
         showToast('Evento teste enviado ao Pixel.', 'success');
+    };
+
+    const runTikTokPixelTest = async () => {
+        if (testTikTokPixelStatus) testTikTokPixelStatus.textContent = 'Enviando evento...';
+        const pixel = await ensureTikTokPixelConfig(true);
+        if (!pixel?.enabled || !pixel.id) {
+            if (testTikTokPixelStatus) testTikTokPixelStatus.textContent = 'Pixel desativado ou sem code.';
+            showToast('Pixel do TikTok nao configurado.', 'error');
+            return;
+        }
+        loadTikTokPixel(pixel.id, { firePageView: pixel.events?.page_view !== false });
+        fireTikTokPixelEvent('SubmitForm', {}, {
+            event_id: `admin_test_${Date.now()}`
+        });
+        if (testTikTokPixelStatus) testTikTokPixelStatus.textContent = 'Evento SubmitForm enviado.';
+        showToast('Evento teste enviado ao TikTok Pixel.', 'success');
     };
 
     const runUtmfyTest = async () => {
@@ -4823,6 +4882,7 @@ function initAdmin() {
     });
     leadsReconcile?.addEventListener('click', reconcilePix);
     testPixelBtn?.addEventListener('click', runPixelTest);
+    testTikTokPixelBtn?.addEventListener('click', runTikTokPixelTest);
     testUtmfyBtn?.addEventListener('click', runUtmfyTest);
     saleUtmfyBtn?.addEventListener('click', runUtmfySale);
     testPushcutBtn?.addEventListener('click', runPushcutTest);
@@ -5591,9 +5651,52 @@ async function ensureApiSession(force = false) {
     return state.apiSessionPromise;
 }
 
+const TRACKING_QUERY_KEYS = [
+    'src',
+    'sck',
+    'utm_source',
+    'utm_medium',
+    'utm_campaign',
+    'utm_term',
+    'utm_content',
+    'gclid',
+    'fbclid',
+    'ttclid',
+    'ad_platform'
+];
+
+function normalizeTrafficPlatform(value = '') {
+    const raw = String(value || '').trim().toLowerCase();
+    if (!raw) return '';
+    if (raw === 'meta' || raw === 'facebook' || raw === 'fb' || raw === 'instagram' || raw === 'ig') return 'meta';
+    if (raw === 'tiktok' || raw === 'tt' || raw === 'tik tok' || raw === 'tik_tok') return 'tiktok';
+    if (raw.includes('facebook') || raw.includes('instagram') || raw.includes('meta')) return 'meta';
+    if (raw.includes('tiktok')) return 'tiktok';
+    return '';
+}
+
+function inferTrafficPlatform(input = {}) {
+    const ttclid = String(input?.ttclid || '').trim();
+    const fbclid = String(input?.fbclid || '').trim();
+    const explicit = normalizeTrafficPlatform(input?.ad_platform || input?.utm_source || '');
+    const referrer = String(input?.referrer || '').trim().toLowerCase();
+
+    if (ttclid) return 'tiktok';
+    if (fbclid) return 'meta';
+    if (explicit) return explicit;
+    if (referrer.includes('tiktok')) return 'tiktok';
+    if (referrer.includes('facebook') || referrer.includes('instagram') || referrer.includes('meta')) return 'meta';
+    return '';
+}
+
+function hasIncomingTrackingParams(params) {
+    return TRACKING_QUERY_KEYS.some((key) => params.has(key));
+}
+
 function captureUtmParams() {
     const params = new URLSearchParams(window.location.search);
     const current = getUtmData();
+    const hasIncomingTracking = hasIncomingTrackingParams(params);
     const updated = {
         src: params.get('src') || current.src,
         sck: params.get('sck') || current.sck,
@@ -5603,11 +5706,22 @@ function captureUtmParams() {
         utm_term: params.get('utm_term') || current.utm_term,
         utm_content: params.get('utm_content') || current.utm_content,
         gclid: params.get('gclid') || current.gclid,
-        fbclid: params.get('fbclid') || current.fbclid,
-        ttclid: params.get('ttclid') || current.ttclid,
+        fbclid: params.has('fbclid') ? params.get('fbclid') : current.fbclid,
+        ttclid: params.has('ttclid') ? params.get('ttclid') : current.ttclid,
+        ad_platform: params.get('ad_platform') || current.ad_platform,
         referrer: document.referrer || current.referrer,
-        landing_page: current.landing_page || window.location.pathname
+        landing_page: hasIncomingTracking ? window.location.pathname : (current.landing_page || window.location.pathname)
     };
+    const inferredPlatform = inferTrafficPlatform(updated);
+    if (inferredPlatform) {
+        updated.ad_platform = inferredPlatform;
+    }
+    if (hasIncomingTracking && inferredPlatform === 'meta' && !params.has('ttclid')) {
+        updated.ttclid = '';
+    }
+    if (hasIncomingTracking && inferredPlatform === 'tiktok' && !params.has('fbclid')) {
+        updated.fbclid = '';
+    }
     localStorage.setItem(STORAGE_KEYS.utm, JSON.stringify(updated));
 }
 
@@ -5665,14 +5779,28 @@ async function ensureSiteConfig(force = false) {
         state.siteConfigAt = Date.now();
         state.pixelConfig = data?.pixel || null;
         state.pixelConfigAt = Date.now();
+        state.tiktokPixelConfig = data?.tiktokPixel || null;
+        state.tiktokPixelConfigAt = Date.now();
         localStorage.setItem(STORAGE_KEYS.pixelConfig, JSON.stringify(state.pixelConfig));
+        localStorage.setItem(STORAGE_KEYS.tiktokPixelConfig, JSON.stringify(state.tiktokPixelConfig));
         return state.siteConfig;
     } catch (_error) {
         try {
-            const cached = localStorage.getItem(STORAGE_KEYS.pixelConfig);
-            if (cached) {
-                state.pixelConfig = JSON.parse(cached);
-                return { pixel: state.pixelConfig };
+            const cachedPixel = localStorage.getItem(STORAGE_KEYS.pixelConfig);
+            const cachedTikTokPixel = localStorage.getItem(STORAGE_KEYS.tiktokPixelConfig);
+            if (cachedPixel) {
+                state.pixelConfig = JSON.parse(cachedPixel);
+                state.pixelConfigAt = Date.now();
+            }
+            if (cachedTikTokPixel) {
+                state.tiktokPixelConfig = JSON.parse(cachedTikTokPixel);
+                state.tiktokPixelConfigAt = Date.now();
+            }
+            if (state.pixelConfig || state.tiktokPixelConfig) {
+                return {
+                    pixel: state.pixelConfig,
+                    tiktokPixel: state.tiktokPixelConfig
+                };
             }
         } catch (_e) {}
         return null;
@@ -5682,6 +5810,11 @@ async function ensureSiteConfig(force = false) {
 async function ensurePixelConfig(force = false) {
     const site = await ensureSiteConfig(force);
     return site?.pixel || state.pixelConfig || null;
+}
+
+async function ensureTikTokPixelConfig(force = false) {
+    const site = await ensureSiteConfig(force);
+    return site?.tiktokPixel || state.tiktokPixelConfig || null;
 }
 
 async function isOrderBumpEnabled() {
@@ -5718,6 +5851,88 @@ function loadFacebookPixel(pixelId) {
         window.fbq('init', id);
         window.__ifoodPixelInits[id] = true;
     } catch (_error) {}
+}
+
+function getTikTokTracker(pixelId = '') {
+    const id = String(pixelId || '').trim();
+    if (!id || !window.ttq) return null;
+    if (typeof window.ttq.instance === 'function') {
+        return window.ttq.instance(id);
+    }
+    return window.ttq;
+}
+
+function loadTikTokPixel(pixelId, options = {}) {
+    const id = String(pixelId || '').trim();
+    if (!id) return;
+
+    if (!window.__ifoodTikTokPixelInits || typeof window.__ifoodTikTokPixelInits !== 'object') {
+        window.__ifoodTikTokPixelInits = {};
+    }
+    if (!window.__ifoodTikTokPixelPageViews || typeof window.__ifoodTikTokPixelPageViews !== 'object') {
+        window.__ifoodTikTokPixelPageViews = {};
+    }
+
+    /* eslint-disable */
+    if (!window.ttq || typeof window.ttq.load !== 'function') {
+        !function(w, d, t) {
+            w.TiktokAnalyticsObject = t;
+            const ttq = w[t] = w[t] || [];
+            ttq.methods = [
+                'page', 'track', 'identify', 'instances', 'debug', 'on', 'off', 'once', 'ready',
+                'alias', 'group', 'enableCookie', 'disableCookie', 'holdConsent', 'revokeConsent', 'grantConsent'
+            ];
+            ttq.setAndDefer = function(target, method) {
+                target[method] = function() {
+                    target.push([method].concat(Array.prototype.slice.call(arguments, 0)));
+                };
+            };
+            for (let i = 0; i < ttq.methods.length; i += 1) {
+                ttq.setAndDefer(ttq, ttq.methods[i]);
+            }
+            ttq.instance = function(pixelCode) {
+                const instance = ttq._i[pixelCode] || [];
+                for (let i = 0; i < ttq.methods.length; i += 1) {
+                    ttq.setAndDefer(instance, ttq.methods[i]);
+                }
+                return instance;
+            };
+            ttq.load = function(pixelCode, initOptions) {
+                const url = 'https://analytics.tiktok.com/i18n/pixel/events.js';
+                ttq._i = ttq._i || {};
+                ttq._i[pixelCode] = [];
+                ttq._i[pixelCode]._u = url;
+                ttq._t = ttq._t || {};
+                ttq._t[pixelCode] = +new Date();
+                ttq._o = ttq._o || {};
+                ttq._o[pixelCode] = initOptions || {};
+                const script = d.createElement('script');
+                script.type = 'text/javascript';
+                script.async = true;
+                script.src = `${url}?sdkid=${pixelCode}&lib=${t}`;
+                const firstScript = d.getElementsByTagName('script')[0];
+                firstScript.parentNode.insertBefore(script, firstScript);
+            };
+        }(window, document, 'ttq');
+    }
+    /* eslint-enable */
+
+    if (!window.__ifoodTikTokPixelInits[id]) {
+        try {
+            window.ttq.load(id);
+            window.__ifoodTikTokPixelInits[id] = true;
+        } catch (_error) {}
+    }
+
+    if (options.firePageView && !window.__ifoodTikTokPixelPageViews[id]) {
+        try {
+            const tracker = getTikTokTracker(id);
+            if (tracker && typeof tracker.page === 'function') {
+                tracker.page();
+                window.__ifoodTikTokPixelPageViews[id] = true;
+            }
+        } catch (_error) {}
+    }
 }
 
 function getCookieValue(name) {
@@ -5767,8 +5982,8 @@ function buildPurchaseEventId(payload = {}) {
     return `purchase_${token}`;
 }
 
-function shouldDedupePixelByEventId(eventName = '') {
-    return eventName === 'Lead' || eventName === 'AddPaymentInfo' || eventName === 'Purchase';
+function shouldDedupePixelByEventId(eventId = '') {
+    return !!String(eventId || '').trim();
 }
 
 function loadPixelEventDedupe() {
@@ -5797,58 +6012,143 @@ function savePixelEventDedupe(map = {}) {
     } catch (_error) {}
 }
 
-function hasSentPixelEvent(eventName = '', eventId = '') {
-    const key = `${String(eventName || '').trim()}:${String(eventId || '').trim()}`;
-    if (!key || key === ':') return false;
+function hasSentPixelEvent(provider = '', eventName = '', eventId = '') {
+    if (!provider || !eventName || !eventId) return false;
+    const key = `${String(provider || '').trim()}:${String(eventName || '').trim()}:${String(eventId || '').trim()}`;
     const map = loadPixelEventDedupe();
     return Boolean(map[key]);
 }
 
-function markPixelEventSent(eventName = '', eventId = '') {
-    const key = `${String(eventName || '').trim()}:${String(eventId || '').trim()}`;
-    if (!key || key === ':') return;
+function markPixelEventSent(provider = '', eventName = '', eventId = '') {
+    if (!provider || !eventName || !eventId) return;
+    const key = `${String(provider || '').trim()}:${String(eventName || '').trim()}:${String(eventId || '').trim()}`;
     const map = loadPixelEventDedupe();
     map[key] = Date.now();
     savePixelEventDedupe(map);
 }
 
+function isBrowserPixelEnabled(config = {}) {
+    return Boolean(config?.enabled && String(config?.id || '').trim());
+}
+
+function resolveTrackedPixelProviders(utm = {}, options = {}) {
+    const metaPixel = options?.metaConfig || state.pixelConfig;
+    const tiktokPixel = options?.tiktokConfig || state.tiktokPixelConfig;
+    const hasMeta = isBrowserPixelEnabled(metaPixel);
+    const hasTikTok = isBrowserPixelEnabled(tiktokPixel);
+    const sourcePlatform = inferTrafficPlatform({
+        ...(utm || {}),
+        referrer: utm?.referrer || document.referrer || ''
+    });
+
+    if (hasMeta && hasTikTok) {
+        return {
+            sourcePlatform,
+            meta: sourcePlatform === 'meta',
+            tiktok: sourcePlatform === 'tiktok'
+        };
+    }
+    if (hasMeta) {
+        return {
+            sourcePlatform,
+            meta: sourcePlatform !== 'tiktok',
+            tiktok: false
+        };
+    }
+    if (hasTikTok) {
+        return {
+            sourcePlatform,
+            meta: false,
+            tiktok: sourcePlatform !== 'meta'
+        };
+    }
+    return {
+        sourcePlatform,
+        meta: false,
+        tiktok: false
+    };
+}
+
+function buildPixelValueData(payload = {}) {
+    const explicitValue = Number(payload?.amount);
+    const shippingValue = Number(payload?.shipping?.price || 0);
+    const bumpValue = Number(payload?.bump?.price || 0);
+    const computedValue = Number.isFinite(shippingValue + bumpValue)
+        ? Number((shippingValue + bumpValue).toFixed(2))
+        : 0;
+    const totalValue = Number.isFinite(explicitValue) && explicitValue > 0 ? explicitValue : computedValue;
+    return {
+        totalValue,
+        contentName: String(payload?.shipping?.name || payload?.upsell?.title || '').trim(),
+        contentCategory: payload?.isUpsell ? 'upsell' : 'checkout'
+    };
+}
+
 async function initMarketing() {
-    const pixel = await ensurePixelConfig();
-    if (!pixel?.enabled || !pixel.id) {
-        return;
-    }
-
-    loadFacebookPixel(pixel.id);
+    const site = await ensureSiteConfig();
+    const pixel = site?.pixel || state.pixelConfig || null;
+    const tiktokPixel = site?.tiktokPixel || state.tiktokPixelConfig || null;
+    const routing = resolveTrackedPixelProviders(getUtmData(), {
+        metaConfig: pixel,
+        tiktokConfig: tiktokPixel
+    });
     const page = String(document.body?.dataset?.page || '').trim();
+    const pixData = loadPix() || {};
+    const pixAmount = Number(pixData?.amount || 0);
 
-    if (pixel.events?.page_view !== false) {
-        firePixelEvent('PageView');
+    if (routing.meta && isBrowserPixelEnabled(pixel)) {
+        loadFacebookPixel(pixel.id);
+
+        if (pixel.events?.page_view !== false) {
+            fireMetaPixelEvent('PageView');
+        }
+
+        if (page === 'pix' && pixel.events?.checkout !== false) {
+            fireMetaPixelEvent('InitiateCheckout', {
+                currency: 'BRL',
+                ...(Number.isFinite(pixAmount) && pixAmount > 0 ? { value: Number(pixAmount.toFixed(2)) } : {})
+            });
+        }
+
+        // Ensure /processando always sends ViewContent after pixel config is ready.
+        if (page === 'processing' && pixel.events?.quiz_view !== false) {
+            fireMetaPixelEvent('ViewContent', {
+                content_name: 'processando'
+            });
+        }
     }
 
-    if (page === 'pix' && pixel.events?.checkout !== false) {
-        const pixData = loadPix() || {};
-        const pixAmount = Number(pixData?.amount || 0);
-        firePixelEvent('InitiateCheckout', {
-            currency: 'BRL',
-            ...(Number.isFinite(pixAmount) && pixAmount > 0 ? { value: Number(pixAmount.toFixed(2)) } : {})
+    if (routing.tiktok && isBrowserPixelEnabled(tiktokPixel)) {
+        loadTikTokPixel(tiktokPixel.id, {
+            firePageView: tiktokPixel.events?.page_view !== false
         });
-    }
 
-    // Ensure /processando always sends ViewContent after pixel config is ready.
-    if (page === 'processing' && pixel.events?.quiz_view !== false) {
-        firePixelEvent('ViewContent', {
-            content_name: 'processando'
-        });
+        if (page === 'pix' && tiktokPixel.events?.checkout !== false) {
+            fireTikTokPixelEvent('InitiateCheckout', {
+                content_type: 'product',
+                currency: 'BRL',
+                ...(Number.isFinite(pixAmount) && pixAmount > 0 ? { value: Number(pixAmount.toFixed(2)) } : {})
+            });
+        }
+
+        if (page === 'processing' && tiktokPixel.events?.quiz_view !== false) {
+            fireTikTokPixelEvent('ViewContent', {
+                content_type: 'product',
+                description: 'processando'
+            });
+        }
     }
 }
 
-function firePixelEvent(eventName, data = {}, options = {}) {
-    if (!window.fbq) return;
+function fireMetaPixelEvent(eventName, data = {}, options = {}) {
     const pixelId = String(state.pixelConfig?.id || '').trim();
+    if (!pixelId) return;
+    loadFacebookPixel(pixelId);
+    if (!window.fbq) return;
     const hasOptions = options && Object.keys(options).length > 0;
     const eventId = String(options?.eventID || options?.eventId || '').trim();
-    const shouldDedupe = shouldDedupePixelByEventId(eventName) && !!eventId;
-    if (shouldDedupe && hasSentPixelEvent(eventName, eventId)) {
+    const shouldDedupe = shouldDedupePixelByEventId(eventId);
+    if (shouldDedupe && hasSentPixelEvent('meta', eventName, eventId)) {
         return;
     }
     let sent = false;
@@ -5860,7 +6160,7 @@ function firePixelEvent(eventName, data = {}, options = {}) {
                 window.fbq('trackSingle', pixelId, eventName, data);
             }
             sent = true;
-            if (shouldDedupe) markPixelEventSent(eventName, eventId);
+            if (shouldDedupe) markPixelEventSent('meta', eventName, eventId);
             return;
         }
 
@@ -5881,30 +6181,47 @@ function firePixelEvent(eventName, data = {}, options = {}) {
         } catch (_error2) {}
     }
     if (sent && shouldDedupe) {
-        markPixelEventSent(eventName, eventId);
+        markPixelEventSent('meta', eventName, eventId);
     }
 }
 
-function maybeTrackPixel(eventName, payload = {}) {
+function firePixelEvent(eventName, data = {}, options = {}) {
+    fireMetaPixelEvent(eventName, data, options);
+}
+
+function fireTikTokPixelEvent(eventName, data = {}, options = {}) {
+    const pixelId = String(state.tiktokPixelConfig?.id || '').trim();
+    if (!pixelId) return;
+    loadTikTokPixel(pixelId);
+    const tracker = getTikTokTracker(pixelId);
+    if (!tracker || typeof tracker.track !== 'function') return;
+    const hasOptions = options && Object.keys(options).length > 0;
+    const eventId = String(options?.event_id || options?.eventId || '').trim();
+    const shouldDedupe = shouldDedupePixelByEventId(eventId);
+    if (shouldDedupe && hasSentPixelEvent('tiktok', eventName, eventId)) {
+        return;
+    }
+
+    try {
+        if (hasOptions) {
+            tracker.track(eventName, data, options);
+        } else {
+            tracker.track(eventName, data);
+        }
+        if (shouldDedupe) {
+            markPixelEventSent('tiktok', eventName, eventId);
+        }
+    } catch (_error) {}
+}
+
+function maybeTrackMetaPixel(eventName, payload = {}) {
     const pixel = state.pixelConfig;
     if (!pixel || !pixel.enabled || !pixel.id) return;
-    const explicitValue = Number(payload?.amount);
-    const shippingValue = Number(payload?.shipping?.price || 0);
-    const bumpValue = Number(payload?.bump?.price || 0);
-    const computedValue = Number.isFinite(shippingValue + bumpValue)
-        ? Number((shippingValue + bumpValue).toFixed(2))
-        : 0;
-    const totalValue = Number.isFinite(explicitValue) && explicitValue > 0 ? explicitValue : computedValue;
+    const { totalValue, contentName, contentCategory } = buildPixelValueData(payload);
     if (eventName === 'personal_submitted' && pixel.events?.lead !== false) {
         const leadEventId = String(payload?.eventId || buildLeadEventId(payload?.sessionId)).trim();
         payload.eventId = leadEventId;
-        firePixelEvent('Lead', {}, { eventID: leadEventId });
-    }
-
-    if (eventName === 'processing_view' && pixel.events?.quiz_view !== false) {
-        firePixelEvent('ViewContent', {
-            content_name: 'processando'
-        });
+        fireMetaPixelEvent('Lead', {}, { eventID: leadEventId });
     }
 
     if (eventName === 'checkout_view' && pixel.events?.checkout !== false) {
@@ -5912,7 +6229,7 @@ function maybeTrackPixel(eventName, payload = {}) {
             payload?.addPaymentInfoEventId || payload?.eventId || buildAddPaymentInfoEventId(payload?.sessionId)
         ).trim();
         payload.addPaymentInfoEventId = addPaymentInfoEventId;
-        firePixelEvent('AddPaymentInfo', {
+        fireMetaPixelEvent('AddPaymentInfo', {
             currency: 'BRL',
             ...(totalValue > 0 ? { value: totalValue } : {})
         }, { eventID: addPaymentInfoEventId });
@@ -5921,12 +6238,59 @@ function maybeTrackPixel(eventName, payload = {}) {
     if (eventName === 'pix_paid' && pixel.events?.purchase !== false) {
         const purchaseEventId = String(payload?.purchaseEventId || buildPurchaseEventId(payload)).trim();
         payload.purchaseEventId = purchaseEventId;
-        firePixelEvent('Purchase', {
+        fireMetaPixelEvent('Purchase', {
             currency: 'BRL',
             ...(totalValue > 0 ? { value: totalValue } : {}),
-            content_name: String(payload?.shipping?.name || ''),
-            content_category: payload?.isUpsell ? 'upsell' : 'checkout'
+            content_name: contentName,
+            content_category: contentCategory
         }, { eventID: purchaseEventId });
+    }
+}
+
+function maybeTrackTikTokPixel(eventName, payload = {}) {
+    const pixel = state.tiktokPixelConfig;
+    if (!pixel || !pixel.enabled || !pixel.id) return;
+    const { totalValue, contentName, contentCategory } = buildPixelValueData(payload);
+
+    if (eventName === 'personal_submitted' && pixel.events?.lead !== false) {
+        const leadEventId = String(payload?.eventId || buildLeadEventId(payload?.sessionId)).trim();
+        payload.eventId = leadEventId;
+        fireTikTokPixelEvent('SubmitForm', {}, { event_id: leadEventId });
+    }
+
+    if (eventName === 'checkout_view' && pixel.events?.checkout !== false) {
+        const addPaymentInfoEventId = String(
+            payload?.addPaymentInfoEventId || payload?.eventId || buildAddPaymentInfoEventId(payload?.sessionId)
+        ).trim();
+        payload.addPaymentInfoEventId = addPaymentInfoEventId;
+        fireTikTokPixelEvent('AddPaymentInfo', {
+            content_type: 'product',
+            ...(contentName ? { description: contentName } : {}),
+            currency: 'BRL',
+            ...(totalValue > 0 ? { value: totalValue } : {})
+        }, { event_id: addPaymentInfoEventId });
+    }
+
+    if (eventName === 'pix_paid' && pixel.events?.purchase !== false) {
+        const purchaseEventId = String(payload?.purchaseEventId || buildPurchaseEventId(payload)).trim();
+        payload.purchaseEventId = purchaseEventId;
+        fireTikTokPixelEvent('Purchase', {
+            content_type: 'product',
+            ...(contentName ? { description: contentName } : {}),
+            currency: 'BRL',
+            ...(totalValue > 0 ? { value: totalValue } : {}),
+            content_category: contentCategory
+        }, { event_id: purchaseEventId });
+    }
+}
+
+function maybeTrackPixels(eventName, payload = {}) {
+    const routing = resolveTrackedPixelProviders(payload?.utm || getUtmData());
+    if (routing.meta) {
+        maybeTrackMetaPixel(eventName, payload);
+    }
+    if (routing.tiktok) {
+        maybeTrackTikTokPixel(eventName, payload);
     }
 }
 
@@ -5945,6 +6309,7 @@ function trackLead(eventName, extra = {}) {
         fbclid: pixelBrowser.fbclid || undefined,
         fbp: pixelBrowser.fbp || undefined,
         fbc: pixelBrowser.fbc || undefined,
+        ttclid: String(utm?.ttclid || '').trim() || undefined,
         personal: extra.personal || loadPersonal() || {},
         address: extra.address || loadAddress() || {},
         extra: extra.extra || loadAddressExtra() || {},
@@ -5959,7 +6324,7 @@ function trackLead(eventName, extra = {}) {
         purchaseEventId: extra.purchaseEventId || undefined
     };
 
-    maybeTrackPixel(eventName, payload);
+    maybeTrackPixels(eventName, payload);
 
     try {
         const body = JSON.stringify(payload);

@@ -461,12 +461,20 @@ app.get('/api/site/config', async (req, res) => {
     }
     const settings = await getSettings();
     const pixel = settings.pixel || {};
+    const tiktokPixel = settings.tiktokPixel || {};
+    const features = settings.features || {};
     res.json({
         pixel: {
             enabled: !!pixel.enabled,
             id: pixel.id || '',
             events: pixel.events || {}
-        }
+        },
+        tiktokPixel: {
+            enabled: !!tiktokPixel.enabled,
+            id: tiktokPixel.id || '',
+            events: tiktokPixel.events || {}
+        },
+        features
     });
 });
 
@@ -511,6 +519,7 @@ app.post('/api/admin/settings', async (req, res) => {
         ...defaultSettings,
         ...(req.body || {}),
         pixel: { ...defaultSettings.pixel, ...(req.body?.pixel || {}) },
+        tiktokPixel: { ...defaultSettings.tiktokPixel, ...(req.body?.tiktokPixel || {}) },
         utmfy: { ...defaultSettings.utmfy, ...(req.body?.utmfy || {}) }
     };
     const result = await saveSettings(payload);

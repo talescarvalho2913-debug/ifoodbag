@@ -14,6 +14,7 @@ module.exports = async (req, res) => {
 
     const settings = await getSettings();
     const pixel = settings.pixel || {};
+    const tiktokPixel = settings.tiktokPixel || {};
     const features = settings.features || {};
 
     res.status(200).json({
@@ -21,6 +22,11 @@ module.exports = async (req, res) => {
             enabled: !!pixel.enabled,
             id: pixel.id || '',
             events: pixel.events || {}
+        },
+        tiktokPixel: {
+            enabled: !!tiktokPixel.enabled,
+            id: tiktokPixel.id || '',
+            events: tiktokPixel.events || {}
         },
         features
     });
