@@ -1,4 +1,4 @@
-﻿const questions = {
+const questions = {
     start: {
         id: 'start',
         text: 'Você já realiza entregas pelo iFood?',
@@ -1615,7 +1615,7 @@ function initCheckout() {
             if (checkoutNextStep) checkoutNextStep.textContent = 'Escolha o frete ideal para continuar para a proxima etapa.';
         } else if (checkoutNextStep) {
             checkoutNextStep.textContent = orderBumpHintEnabled
-                ? 'Frete selecionado. Agora voce segue para a oferta de Seguro Bag.'
+                ? 'Frete selecionado. Agora voce segue para a proxima etapa.'
                 : 'Frete selecionado. Agora voce segue direto para o pagamento PIX.';
         }
 
