@@ -40,7 +40,7 @@ const authHeaders = {
 let cachedSellerId = null;
 
 app.use(express.json({ limit: '1mb' }));
-app.use(express.static(__dirname));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Keep local Express behavior aligned with the serverless API handlers.
 app.post('/api/pix/create', (req, res) => pixCreateHandler(req, res));
@@ -49,35 +49,35 @@ app.post('/api/pix/webhook', (req, res) => pixWebhookHandler(req, res));
 app.all('/api/admin/*', (req, res) => adminApiHandler(req, res));
 
 app.get('/', (_req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.get('/admin', (_req, res) => {
-    res.sendFile(path.join(__dirname, 'admin.html'));
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
 app.get('/admin/tracking', (_req, res) => {
-    res.sendFile(path.join(__dirname, 'admin-tracking.html'));
+    res.sendFile(path.join(__dirname, 'public', 'admin-tracking.html'));
 });
 
 app.get('/admin/utmfy', (_req, res) => {
-    res.sendFile(path.join(__dirname, 'admin-utmfy.html'));
+    res.sendFile(path.join(__dirname, 'public', 'admin-utmfy.html'));
 });
 
 app.get('/admin/gateways', (_req, res) => {
-    res.sendFile(path.join(__dirname, 'admin-gateways.html'));
+    res.sendFile(path.join(__dirname, 'public', 'admin-gateways.html'));
 });
 
 app.get('/admin/pages', (_req, res) => {
-    res.sendFile(path.join(__dirname, 'admin-pages.html'));
+    res.sendFile(path.join(__dirname, 'public', 'admin-pages.html'));
 });
 
 app.get('/admin/backredirects', (_req, res) => {
-    res.sendFile(path.join(__dirname, 'admin-backredirects.html'));
+    res.sendFile(path.join(__dirname, 'public', 'admin-backredirects.html'));
 });
 
 app.get('/admin/leads', (_req, res) => {
-    res.sendFile(path.join(__dirname, 'admin-leads.html'));
+    res.sendFile(path.join(__dirname, 'public', 'admin-leads.html'));
 });
 
 const funnelRoutes = {
@@ -96,7 +96,7 @@ const funnelRoutes = {
 
 for (const [routePath, fileName] of Object.entries(funnelRoutes)) {
     app.get(routePath, (_req, res) => {
-        res.sendFile(path.join(__dirname, fileName));
+        res.sendFile(path.join(__dirname, 'public', fileName));
     });
 }
 
