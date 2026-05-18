@@ -220,6 +220,7 @@
               <select id="payments-active-gateway" class="floating-input">
                 <option value="ativushub">AtivusHUB</option>
                 <option value="ghostspay">GhostsPay</option>
+                <option value="atomopay">Atomopay</option>
               </select>
               <label for="payments-active-gateway" class="floating-label">Gateway ativo</label>
             </div>
@@ -264,6 +265,27 @@
             <div class="input-group">
               <input type="password" id="gateway-ghostspay-webhook-token" class="floating-input" placeholder=" " />
               <label for="gateway-ghostspay-webhook-token" class="floating-label">GhostsPay Webhook Token</label>
+            </div>
+
+            <label class="admin-switch">
+              <input type="checkbox" id="gateway-atomopay-enabled" />
+              <span>Atomopay ativo</span>
+            </label>
+            <div class="input-group">
+              <input type="text" id="gateway-atomopay-base-url" class="floating-input" placeholder=" " />
+              <label for="gateway-atomopay-base-url" class="floating-label">Atomopay Base URL</label>
+            </div>
+            <div class="input-group">
+              <input type="password" id="gateway-atomopay-api-token" class="floating-input" placeholder=" " autocomplete="new-password" />
+              <label for="gateway-atomopay-api-token" class="floating-label">Atomopay API Token</label>
+            </div>
+            <div class="input-group">
+              <input type="text" id="gateway-atomopay-offer-hash" class="floating-input" placeholder=" " />
+              <label for="gateway-atomopay-offer-hash" class="floating-label">Atomopay Offer Hash (Company ID)</label>
+            </div>
+            <div class="input-group">
+              <input type="password" id="gateway-atomopay-webhook-token" class="floating-input" placeholder=" " autocomplete="new-password" />
+              <label for="gateway-atomopay-webhook-token" class="floating-label">Atomopay Webhook Token</label>
             </div>
           </div>
         </section>

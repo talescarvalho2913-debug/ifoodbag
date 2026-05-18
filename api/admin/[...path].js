@@ -497,6 +497,7 @@ function sanitizeSettingsForAdmin(settingsData = {}) {
     payload.payments.gateways = payload.payments.gateways || {};
     payload.payments.gateways.ativushub = payload.payments.gateways.ativushub || {};
     payload.payments.gateways.ghostspay = payload.payments.gateways.ghostspay || {};
+    payload.payments.gateways.atomopay = payload.payments.gateways.atomopay || {};
     payload.payments.gateways.sunize = payload.payments.gateways.sunize || {};
     payload.payments.gateways.paradise = payload.payments.gateways.paradise || {};
 
@@ -511,6 +512,8 @@ function sanitizeSettingsForAdmin(settingsData = {}) {
     payload.payments.gateways.ghostspay.secretKey = maskSecret(payload.payments.gateways.ghostspay.secretKey);
     payload.payments.gateways.ghostspay.basicAuthBase64 = '';
     payload.payments.gateways.ghostspay.webhookToken = maskSecret(payload.payments.gateways.ghostspay.webhookToken);
+    payload.payments.gateways.atomopay.apiToken = maskSecret(payload.payments.gateways.atomopay.apiToken);
+    payload.payments.gateways.atomopay.webhookToken = maskSecret(payload.payments.gateways.atomopay.webhookToken);
     payload.payments.gateways.sunize.apiKey = maskSecret(payload.payments.gateways.sunize.apiKey);
     payload.payments.gateways.sunize.apiSecret = maskSecret(payload.payments.gateways.sunize.apiSecret);
     payload.payments.gateways.paradise.apiKey = maskSecret(payload.payments.gateways.paradise.apiKey);
@@ -1878,6 +1881,9 @@ async function settings(req, res) {
         const bodyGhost = bodyGateways.ghostspay && typeof bodyGateways.ghostspay === 'object'
             ? bodyGateways.ghostspay
             : {};
+        const bodyAtomopay = bodyGateways.atomopay && typeof bodyGateways.atomopay === 'object'
+            ? bodyGateways.atomopay
+            : {};
         const bodySunize = bodyGateways.sunize && typeof bodyGateways.sunize === 'object'
             ? bodyGateways.sunize
             : {};
@@ -1886,6 +1892,7 @@ async function settings(req, res) {
             : {};
         const currentAtivusGateway = currentPayments?.gateways?.ativushub || {};
         const currentGhostGateway = currentPayments?.gateways?.ghostspay || {};
+        const currentAtomopayGateway = currentPayments?.gateways?.atomopay || {};
         const currentSunizeGateway = currentPayments?.gateways?.sunize || {};
         const currentParadiseGateway = currentPayments?.gateways?.paradise || {};
         const mergedPaymentsInput = {
@@ -1909,6 +1916,14 @@ async function settings(req, res) {
                     webhookTokenRequired: bodyGhost.webhookTokenRequired !== undefined
                         ? !!bodyGhost.webhookTokenRequired
                         : currentGhostGateway.webhookTokenRequired === true
+                },
+                atomopay: {
+                    ...bodyAtomopay,
+                    apiToken: pickSecretInput(bodyAtomopay.apiToken, currentAtomopayGateway.apiToken || ''),
+                    webhookToken: pickSecretInput(bodyAtomopay.webhookToken, currentAtomopayGateway.webhookToken || ''),
+                    webhookTokenRequired: bodyAtomopay.webhookTokenRequired !== undefined
+                        ? !!bodyAtomopay.webhookTokenRequired
+                        : currentAtomopayGateway.webhookTokenRequired === true
                 },
                 sunize: {
                     ...bodySunize,

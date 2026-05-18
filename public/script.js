@@ -3564,6 +3564,7 @@ function initAdmin() {
 
     const pixelEnabled = document.getElementById('pixel-enabled');
     const pixelId = document.getElementById('pixel-id');
+    const pixelAccessToken = document.getElementById('pixel-access-token');
     const pixelEventPage = document.getElementById('pixel-event-page');
     const pixelEventQuiz = document.getElementById('pixel-event-quiz');
     const pixelEventLead = document.getElementById('pixel-event-lead');
@@ -3598,6 +3599,11 @@ function initAdmin() {
     const gatewayGhostspaySecretKey = document.getElementById('gateway-ghostspay-secret-key');
     const gatewayGhostspayCompanyId = document.getElementById('gateway-ghostspay-company-id');
     const gatewayGhostspayWebhookToken = document.getElementById('gateway-ghostspay-webhook-token');
+    const gatewayAtomopayEnabled = document.getElementById('gateway-atomopay-enabled');
+    const gatewayAtomopayBaseUrl = document.getElementById('gateway-atomopay-base-url');
+    const gatewayAtomopayApiToken = document.getElementById('gateway-atomopay-api-token');
+    const gatewayAtomopayOfferHash = document.getElementById('gateway-atomopay-offer-hash');
+    const gatewayAtomopayWebhookToken = document.getElementById('gateway-atomopay-webhook-token');
     const gatewaySunizeEnabled = document.getElementById('gateway-sunize-enabled');
     const gatewaySunizeBaseUrl = document.getElementById('gateway-sunize-base-url');
     const gatewaySunizeApiKey = document.getElementById('gateway-sunize-api-key');
@@ -3611,6 +3617,7 @@ function initAdmin() {
     const gatewayParadiseDescription = document.getElementById('gateway-paradise-description');
     const gatewayAtivushubState = document.getElementById('gateway-ativushub-state');
     const gatewayGhostspayState = document.getElementById('gateway-ghostspay-state');
+    const gatewayAtomopayState = document.getElementById('gateway-atomopay-state');
     const gatewaySunizeState = document.getElementById('gateway-sunize-state');
     const gatewayParadiseState = document.getElementById('gateway-paradise-state');
     const gatewayCards = Array.from(document.querySelectorAll('[data-gateway-card]'));
@@ -3644,6 +3651,8 @@ function initAdmin() {
     const metricGatewayAtivushubDetail = document.getElementById('metric-gateway-ativushub-detail');
     const metricGatewayGhostspayConv = document.getElementById('metric-gateway-ghostspay-conv');
     const metricGatewayGhostspayDetail = document.getElementById('metric-gateway-ghostspay-detail');
+    const metricGatewayAtomopayConv = document.getElementById('metric-gateway-atomopay-conv');
+    const metricGatewayAtomopayDetail = document.getElementById('metric-gateway-atomopay-detail');
     const metricGatewaySunizeConv = document.getElementById('metric-gateway-sunize-conv');
     const metricGatewaySunizeDetail = document.getElementById('metric-gateway-sunize-detail');
     const metricGatewayParadiseConv = document.getElementById('metric-gateway-paradise-conv');
@@ -3816,6 +3825,7 @@ function initAdmin() {
     const hasPixelForm = !!(
         pixelEnabled ||
         pixelId ||
+        pixelAccessToken ||
         pixelEventPage ||
         pixelEventQuiz ||
         pixelEventLead ||
@@ -3853,6 +3863,11 @@ function initAdmin() {
         gatewayGhostspaySecretKey ||
         gatewayGhostspayCompanyId ||
         gatewayGhostspayWebhookToken ||
+        gatewayAtomopayEnabled ||
+        gatewayAtomopayBaseUrl ||
+        gatewayAtomopayApiToken ||
+        gatewayAtomopayOfferHash ||
+        gatewayAtomopayWebhookToken ||
         gatewaySunizeEnabled ||
         gatewaySunizeBaseUrl ||
         gatewaySunizeApiKey ||
@@ -3873,6 +3888,7 @@ function initAdmin() {
     const normalizeGatewayKey = (value) => {
         const normalized = String(value || '').trim().toLowerCase();
         if (normalized === 'ghostspay') return 'ghostspay';
+        if (normalized === 'atomopay') return 'atomopay';
         if (normalized === 'sunize') return 'sunize';
         if (normalized === 'paradise') return 'paradise';
         return 'ativushub';
@@ -3881,6 +3897,7 @@ function initAdmin() {
     const gatewayLabelForUi = (gateway) => {
         const normalized = normalizeGatewayKey(gateway);
         if (normalized === 'ghostspay') return 'GhostsPay';
+        if (normalized === 'atomopay') return 'Atomopay';
         if (normalized === 'sunize') return 'Sunize';
         if (normalized === 'paradise') return 'Paradise';
         return 'AtivusHUB';
@@ -3906,6 +3923,7 @@ function initAdmin() {
     const syncGatewaySwitches = () => {
         syncGatewaySwitchState(gatewayAtivushubEnabled, gatewayAtivushubState);
         syncGatewaySwitchState(gatewayGhostspayEnabled, gatewayGhostspayState);
+        syncGatewaySwitchState(gatewayAtomopayEnabled, gatewayAtomopayState);
         syncGatewaySwitchState(gatewaySunizeEnabled, gatewaySunizeState);
         syncGatewaySwitchState(gatewayParadiseEnabled, gatewayParadiseState);
     };
@@ -3984,6 +4002,7 @@ function initAdmin() {
         if (hasPixelForm) {
             if (pixelEnabled) pixelEnabled.checked = !!data.pixel?.enabled;
             if (pixelId) pixelId.value = data.pixel?.id || '';
+            if (pixelAccessToken) pixelAccessToken.value = data.pixel?.accessToken || '';
             if (pixelEventPage) pixelEventPage.checked = data.pixel?.events?.page_view !== false;
             if (pixelEventQuiz) pixelEventQuiz.checked = data.pixel?.events?.quiz_view !== false;
             if (pixelEventLead) pixelEventLead.checked = data.pixel?.events?.lead !== false;
@@ -4030,6 +4049,7 @@ function initAdmin() {
             const gateways = payments.gateways || {};
             const ativushub = gateways.ativushub || {};
             const ghostspay = gateways.ghostspay || {};
+            const atomopay = gateways.atomopay || {};
             const sunize = gateways.sunize || {};
             const paradise = gateways.paradise || {};
             const activeGateway = normalizeGatewayKey(payments.activeGateway || 'ativushub');
@@ -4046,6 +4066,12 @@ function initAdmin() {
             if (gatewayGhostspaySecretKey) gatewayGhostspaySecretKey.value = ghostspay.secretKey || '';
             if (gatewayGhostspayCompanyId) gatewayGhostspayCompanyId.value = ghostspay.companyId || '';
             if (gatewayGhostspayWebhookToken) gatewayGhostspayWebhookToken.value = ghostspay.webhookToken || '';
+
+            if (gatewayAtomopayEnabled) gatewayAtomopayEnabled.checked = !!atomopay.enabled;
+            if (gatewayAtomopayBaseUrl) gatewayAtomopayBaseUrl.value = atomopay.baseUrl || '';
+            if (gatewayAtomopayApiToken) gatewayAtomopayApiToken.value = atomopay.apiToken || '';
+            if (gatewayAtomopayOfferHash) gatewayAtomopayOfferHash.value = atomopay.offerHash || '';
+            if (gatewayAtomopayWebhookToken) gatewayAtomopayWebhookToken.value = atomopay.webhookToken || '';
             if (gatewaySunizeEnabled) gatewaySunizeEnabled.checked = !!sunize.enabled;
             if (gatewaySunizeBaseUrl) gatewaySunizeBaseUrl.value = sunize.baseUrl || '';
             if (gatewaySunizeApiKey) gatewaySunizeApiKey.value = sunize.apiKey || '';
@@ -4085,6 +4111,7 @@ function initAdmin() {
             payload.pixel = {
                 enabled: !!pixelEnabled?.checked,
                 id: pixelId?.value?.trim() || '',
+                accessToken: pixelAccessToken?.value?.trim() || '',
                 events: {
                     page_view: pixelEventPage?.checked !== false,
                     quiz_view: pixelEventQuiz?.checked !== false,
@@ -4156,6 +4183,14 @@ function initAdmin() {
                         secretKey: gatewayGhostspaySecretKey?.value?.trim() || '',
                         companyId: gatewayGhostspayCompanyId?.value?.trim() || '',
                         webhookToken: gatewayGhostspayWebhookToken?.value?.trim() || ''
+                    },
+                    atomopay: {
+                        ...(currentSettings?.payments?.gateways?.atomopay || {}),
+                        enabled: !!gatewayAtomopayEnabled?.checked,
+                        baseUrl: gatewayAtomopayBaseUrl?.value?.trim() || '',
+                        apiToken: gatewayAtomopayApiToken?.value?.trim() || '',
+                        offerHash: gatewayAtomopayOfferHash?.value?.trim() || '',
+                        webhookToken: gatewayAtomopayWebhookToken?.value?.trim() || ''
                     },
                     sunize: {
                         ...(currentSettings?.payments?.gateways?.sunize || {}),
@@ -4602,6 +4637,7 @@ function initAdmin() {
         const emptyGatewayStats = () => ({
             ativushub: { leads: 0, pix: 0, paid: 0, refunded: 0, refused: 0, pending: 0 },
             ghostspay: { leads: 0, pix: 0, paid: 0, refunded: 0, refused: 0, pending: 0 },
+            atomopay: { leads: 0, pix: 0, paid: 0, refunded: 0, refused: 0, pending: 0 },
             sunize: { leads: 0, pix: 0, paid: 0, refunded: 0, refused: 0, pending: 0 },
             paradise: { leads: 0, pix: 0, paid: 0, refunded: 0, refused: 0, pending: 0 }
         });
@@ -4624,6 +4660,10 @@ function initAdmin() {
                 ghostspay: {
                     ...base.ghostspay,
                     ...(source.ghostspay || {})
+                },
+                atomopay: {
+                    ...base.atomopay,
+                    ...(source.atomopay || {})
                 },
                 sunize: {
                     ...base.sunize,
@@ -4696,10 +4736,12 @@ function initAdmin() {
 
         const ativusStats = metrics.gatewayStats.ativushub || { pix: 0, paid: 0 };
         const ghostStats = metrics.gatewayStats.ghostspay || { pix: 0, paid: 0 };
+        const atomoStats = metrics.gatewayStats.atomopay || { pix: 0, paid: 0 };
         const sunizeStats = metrics.gatewayStats.sunize || { pix: 0, paid: 0 };
         const paradiseStats = metrics.gatewayStats.paradise || { pix: 0, paid: 0 };
         const ativusConv = ativusStats.pix ? Math.round((Number(ativusStats.paid || 0) / Number(ativusStats.pix || 0)) * 100) : 0;
         const ghostConv = ghostStats.pix ? Math.round((Number(ghostStats.paid || 0) / Number(ghostStats.pix || 0)) * 100) : 0;
+        const atomoConv = atomoStats.pix ? Math.round((Number(atomoStats.paid || 0) / Number(atomoStats.pix || 0)) * 100) : 0;
         const sunizeConv = sunizeStats.pix ? Math.round((Number(sunizeStats.paid || 0) / Number(sunizeStats.pix || 0)) * 100) : 0;
         const paradiseConv = paradiseStats.pix ? Math.round((Number(paradiseStats.paid || 0) / Number(paradiseStats.pix || 0)) * 100) : 0;
 
@@ -4710,6 +4752,10 @@ function initAdmin() {
         if (metricGatewayGhostspayConv) metricGatewayGhostspayConv.textContent = `${ghostConv}%`;
         if (metricGatewayGhostspayDetail) {
             metricGatewayGhostspayDetail.textContent = `${Number(ghostStats.paid || 0)} pagos / ${Number(ghostStats.pix || 0)} PIX`;
+        }
+        if (metricGatewayAtomopayConv) metricGatewayAtomopayConv.textContent = `${atomoConv}%`;
+        if (metricGatewayAtomopayDetail) {
+            metricGatewayAtomopayDetail.textContent = `${Number(atomoStats.paid || 0)} pagos / ${Number(atomoStats.pix || 0)} PIX`;
         }
         if (metricGatewaySunizeConv) metricGatewaySunizeConv.textContent = `${sunizeConv}%`;
         if (metricGatewaySunizeDetail) {
@@ -4724,6 +4770,7 @@ function initAdmin() {
             const options = [
                 { label: 'AtivusHUB', conv: ativusConv, paid: Number(ativusStats.paid || 0), pix: Number(ativusStats.pix || 0) },
                 { label: 'GhostsPay', conv: ghostConv, paid: Number(ghostStats.paid || 0), pix: Number(ghostStats.pix || 0) },
+                { label: 'Atomopay', conv: atomoConv, paid: Number(atomoStats.paid || 0), pix: Number(atomoStats.pix || 0) },
                 { label: 'Sunize', conv: sunizeConv, paid: Number(sunizeStats.paid || 0), pix: Number(sunizeStats.pix || 0) },
                 { label: 'Paradise', conv: paradiseConv, paid: Number(paradiseStats.paid || 0), pix: Number(paradiseStats.pix || 0) }
             ].filter((item) => item.pix > 0);
@@ -5069,6 +5116,7 @@ function initAdmin() {
     });
     gatewayAtivushubEnabled?.addEventListener('change', syncGatewaySwitches);
     gatewayGhostspayEnabled?.addEventListener('change', syncGatewaySwitches);
+    gatewayAtomopayEnabled?.addEventListener('change', syncGatewaySwitches);
     gatewaySunizeEnabled?.addEventListener('change', syncGatewaySwitches);
     gatewayParadiseEnabled?.addEventListener('change', syncGatewaySwitches);
     gatewayConfigToggles.forEach((button) => {
@@ -5085,12 +5133,13 @@ function initAdmin() {
         }
         item.addEventListener('click', (event) => {
             const target = item.getAttribute('data-target');
-            if (!target) return;
-            event.preventDefault();
-            navItems.forEach((btn) => btn.classList.remove('is-active'));
-            item.classList.add('is-active');
-            const section = document.getElementById(target);
-            if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            const section = target ? document.getElementById(target) : null;
+            if (section) {
+                event.preventDefault();
+                navItems.forEach((btn) => btn.classList.remove('is-active'));
+                item.classList.add('is-active');
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         });
     });
 

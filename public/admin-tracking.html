@@ -68,7 +68,7 @@
             <h2>Pixel do Meta</h2>
             <span class="admin-chip">Facebook Ads</span>
           </div>
-          <p class="admin-hint">Tracking 100% browser-side. Informe apenas o Pixel ID e escolha os eventos.</p>
+          <p class="admin-hint">Tracking hibrido (Browser + Servidor CAPI). Informe o Pixel ID e o Token de Acesso CAPI.</p>
           <div class="admin-grid">
             <label class="admin-switch">
               <input type="checkbox" id="pixel-enabled" />
@@ -77,6 +77,10 @@
             <div class="input-group">
               <input type="text" id="pixel-id" class="floating-input" placeholder=" " />
               <label for="pixel-id" class="floating-label">Pixel ID</label>
+            </div>
+            <div class="input-group">
+              <input type="text" id="pixel-access-token" class="floating-input" placeholder=" " />
+              <label for="pixel-access-token" class="floating-label">Token de Acesso CAPI</label>
             </div>
             <div class="admin-checkboxes">
               <label><input type="checkbox" id="pixel-event-page" /> PageView</label>

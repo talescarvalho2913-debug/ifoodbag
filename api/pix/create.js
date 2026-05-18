@@ -970,8 +970,31 @@ module.exports = async (req, res) => {
                     } : null
                 }
             };
-            const queued = await enqueueDispatch(reusableUtmJob).catch(() => null);
-            if (queued?.ok || queued?.fallback) {
+            const reusablePixelJob = {
+                channel: 'pixel',
+                eventName: upsellEnabled ? 'upsell_pix_created' : 'pix_created',
+                dedupeKey: reusableTxid ? `pixel:pix_created:${gateway}:${upsellEnabled ? 'upsell' : 'base'}:${reusableTxid}` : null,
+                payload: {
+                    orderId: reusableTxid || orderId,
+                    txid: reusableTxid,
+                    amount: Number(reusable.amount || totalAmount || 0),
+                    personal,
+                    utm: rawBody.utm || {},
+                    sourceUrl: rawBody?.sourceUrl || null,
+                    client_ip: req?.headers?.['x-forwarded-for']
+                        ? String(req.headers['x-forwarded-for']).split(',')[0].trim()
+                        : req?.socket?.remoteAddress || '',
+                    user_agent: req?.headers?.['user-agent'] || null,
+                    fbc: rawBody?.utm?.fbclid || null,
+                    fbp: rawBody?.fbp || null
+                }
+            };
+
+            const [utmQueued, pixelQueued] = await Promise.all([
+                enqueueDispatch(reusableUtmJob).catch(() => null),
+                enqueueDispatch(reusablePixelJob).catch(() => null)
+            ]);
+            if (utmQueued?.ok || utmQueued?.fallback || pixelQueued?.ok || pixelQueued?.fallback) {
                 processDispatchQueue(6).catch(() => null);
             }
             return res.status(200).json(reusable);
@@ -1521,6 +1544,25 @@ module.exports = async (req, res) => {
                     } : null
                 }
             };
+            const pixelJob = {
+                channel: 'pixel',
+                eventName: upsellEnabled ? 'upsell_pix_created' : 'pix_created',
+                dedupeKey: txid ? `pixel:pix_created:${gateway}:${upsellEnabled ? 'upsell' : 'base'}:${txid}` : null,
+                payload: {
+                    orderId: utmOrderId,
+                    txid,
+                    amount: totalAmount,
+                    personal,
+                    utm: rawBody.utm || {},
+                    sourceUrl: rawBody?.sourceUrl || null,
+                    client_ip: req?.headers?.['x-forwarded-for']
+                        ? String(req.headers['x-forwarded-for']).split(',')[0].trim()
+                        : req?.socket?.remoteAddress || '',
+                    user_agent: req?.headers?.['user-agent'] || '',
+                    fbc: rawBody?.utm?.fbclid || null,
+                    fbp: rawBody?.fbp || null
+                }
+            };
             const pushPayload = {
                 txid,
                 orderId: utmOrderId,
@@ -1557,13 +1599,15 @@ module.exports = async (req, res) => {
                 payload: pushPayload
             };
 
-            const [utmQueued, pushQueued] = await Promise.all([
+            const [utmQueued, pushQueued, pixelQueued] = await Promise.all([
                 enqueueDispatch(utmJob).catch(() => null),
-                enqueueDispatch(pushJob).catch(() => null)
+                enqueueDispatch(pushJob).catch(() => null),
+                enqueueDispatch(pixelJob).catch(() => null)
             ]);
             const shouldProcessQueue = Boolean(
                 utmQueued?.ok || utmQueued?.fallback ||
-                pushQueued?.ok || pushQueued?.fallback
+                pushQueued?.ok || pushQueued?.fallback ||
+                pixelQueued?.ok || pixelQueued?.fallback
             );
 
             const responsePayload = {
