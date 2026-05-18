@@ -34,7 +34,7 @@ async function testProdApi() {
         const sessionCookie = cookies.find(c => c.startsWith('__Host-ifb_session='));
         console.log(`Session response: ${sessionReq.statusCode}, Cookies obtained: ${sessionCookie ? sessionCookie.split(';')[0] : 'None'}`);
 
-        console.log('\n2. Triggering PIX creation...');
+        console.log(`\nTriggering PIX creation...`);
         
         const payload = JSON.stringify({
             amount: 15.00,
@@ -80,25 +80,19 @@ async function testProdApi() {
             req.end();
         });
 
-        console.log('\nStatus Code:', pixReq.statusCode);
+        console.log('Status Code:', pixReq.statusCode);
         
-        if (pixReq.statusCode === 307 || pixReq.statusCode === 308 || pixReq.statusCode === 301 || pixReq.statusCode === 302) {
-             console.log('Got redirect to:', pixReq.headers.location);
-        }
-
         try {
             const json = JSON.parse(pixReq.data);
-            console.log('\nSuccess! API Response:');
-            console.log(JSON.stringify(json, null, 2));
-            
             if (json.paymentCode) {
                 console.log('\n✅ PIX Code successfully generated!');
                 console.log('Gateway used:', json.gateway);
+                console.log(JSON.stringify(json, null, 2));
             } else {
-                console.log('\n❌ Failed: No paymentCode returned.');
+                console.log('Other response:', JSON.stringify(json, null, 2));
             }
         } catch (e) {
-            console.log('\n❌ Failed to parse JSON response:');
+            console.log('Failed to parse JSON');
             console.log(pixReq.data);
         }
 
