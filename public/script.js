@@ -5647,6 +5647,9 @@ function canReuseRecentPixCharge(pixData, expected = {}) {
     const txid = String(pixData.idTransaction || pixData.txid || '').trim();
     if (!txid) return false;
 
+    const paymentCode = String(pixData.paymentCode || pixData.qrcode || '').trim();
+    if (!paymentCode) return false;
+
     const status = normalizePixLifecycleStatus(
         pixData.status || pixData.statusRaw || pixData.status_transaction || ''
     );

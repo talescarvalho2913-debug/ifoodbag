@@ -794,6 +794,10 @@ async function findReusablePixBySession({
         status = pickText(status, hydrated.status);
     }
 
+    if (!paymentCode && !paymentCodeBase64 && !paymentQrUrl) {
+        return null;
+    }
+
     return {
         idTransaction: txid,
         paymentCode,
