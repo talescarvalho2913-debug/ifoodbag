@@ -56,27 +56,27 @@ app.get('/admin', (_req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-app.get('/admin/tracking', (_req, res) => {
+app.get(['/admin/tracking', '/admin-tracking'], (_req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin-tracking.html'));
 });
 
-app.get('/admin/utmfy', (_req, res) => {
+app.get(['/admin/utmfy', '/admin-utmfy'], (_req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin-utmfy.html'));
 });
 
-app.get('/admin/gateways', (_req, res) => {
+app.get(['/admin/gateways', '/admin-gateways'], (_req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin-gateways.html'));
 });
 
-app.get('/admin/pages', (_req, res) => {
+app.get(['/admin/pages', '/admin-pages'], (_req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin-pages.html'));
 });
 
-app.get('/admin/backredirects', (_req, res) => {
+app.get(['/admin/backredirects', '/admin-backredirects'], (_req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin-backredirects.html'));
 });
 
-app.get('/admin/leads', (_req, res) => {
+app.get(['/admin/leads', '/admin-leads'], (_req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin-leads.html'));
 });
 
