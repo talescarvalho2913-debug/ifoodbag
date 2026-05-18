@@ -1,6 +1,11 @@
-const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envPath)) {
+    require('dotenv').config({ path: envPath });
+}
+
+const express = require('express');
 const { upsertLead } = require('./lib/lead-store');
 const { ensureAllowedRequest, issueSessionCookie } = require('./lib/request-guard');
 const { getSettings, saveSettings, defaultSettings } = require('./lib/settings-store');
@@ -11,11 +16,6 @@ const pixCreateHandler = require('./api/pix/create');
 const pixStatusHandler = require('./api/pix/status');
 const pixWebhookHandler = require('./api/pix/webhook');
 const adminApiHandler = require('./api/admin/[...path].js');
-
-const envPath = path.join(__dirname, '.env');
-if (fs.existsSync(envPath)) {
-    require('dotenv').config({ path: envPath });
-}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
