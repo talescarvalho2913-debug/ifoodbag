@@ -416,12 +416,15 @@ function resolveParadiseResponse(data = {}) {
 
 function resolveAtomopayResponse(data = {}) {
     const root = asObject(data);
-    const txid = pickText(root.transaction_id, root.id);
+    const pix = asObject(root.pix);
+    
+    const txid = pickText(root.transaction, root.hash, root.transaction_id, root.id);
     const externalId = pickText(root.external_id, root.reference);
-    const paymentCode = pickText(root.payment_code, root.pix_payload, root.pix_code);
-    const qrRaw = pickText(root.qrcode, root.qr_code_base64, root.qr_code);
-    const qrUrl = pickText(root.qrcode_url, root.qr_code_url);
-    const status = pickText(root.status, root.raw_status);
+    
+    const paymentCode = pickText(pix.pix_qr_code, root.payment_code, root.pix_payload, root.pix_code);
+    const qrRaw = pickText(pix.qr_code_base64, root.qrcode, root.qr_code_base64, root.qr_code);
+    const qrUrl = pickText(pix.pix_url, root.qrcode_url, root.qr_code_url);
+    const status = pickText(root.payment_status, root.status, root.raw_status);
 
     let paymentCodeBase64 = '';
     let paymentQrUrl = '';
