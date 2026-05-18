@@ -26,34 +26,53 @@ const {
     resolvePostbackUrl: resolveParadisePostbackUrl
 } = require('../../lib/paradise-provider');
 const { getParadiseStatus } = require('../../lib/paradise-status');
+const {
+    requestCreateTransaction: requestAtomopayCreate,
+    requestTransactionById: requestAtomopayStatus,
+    resolvePostbackUrl: resolveAtomopayPostbackUrl
+} = require('../../lib/atomopay-provider');
 
 function resolveGateway(rawBody = {}, payments = {}) {
     const ativushubEnabled = payments?.gateways?.ativushub?.enabled !== false;
     const ghostspayEnabled = payments?.gateways?.ghostspay?.enabled === true;
     const sunizeEnabled = payments?.gateways?.sunize?.enabled === true;
     const paradiseEnabled = payments?.gateways?.paradise?.enabled === true;
+    const atomopayEnabled = payments?.gateways?.atomopay?.enabled === true;
     const requested = normalizeGatewayId(rawBody.gateway || rawBody.paymentGateway || payments.activeGateway);
+    if (requested === 'atomopay' && atomopayEnabled) return 'atomopay';
     if (requested === 'ghostspay' && ghostspayEnabled) return 'ghostspay';
     if (requested === 'sunize' && sunizeEnabled) return 'sunize';
     if (requested === 'paradise' && paradiseEnabled) return 'paradise';
+    
+    if (requested === 'atomopay') {
+        if (sunizeEnabled) return 'sunize';
+        if (paradiseEnabled) return 'paradise';
+        if (ghostspayEnabled) return 'ghostspay';
+        return ativushubEnabled ? 'ativushub' : 'atomopay';
+    }
     if (requested === 'ghostspay') {
+        if (atomopayEnabled) return 'atomopay';
         if (sunizeEnabled) return 'sunize';
         if (paradiseEnabled) return 'paradise';
         return ativushubEnabled ? 'ativushub' : 'ghostspay';
     }
     if (requested === 'sunize') {
+        if (atomopayEnabled) return 'atomopay';
         if (ghostspayEnabled) return 'ghostspay';
         if (paradiseEnabled) return 'paradise';
         return ativushubEnabled ? 'ativushub' : 'sunize';
     }
     if (requested === 'paradise') {
+        if (atomopayEnabled) return 'atomopay';
         if (ghostspayEnabled) return 'ghostspay';
         if (sunizeEnabled) return 'sunize';
         return ativushubEnabled ? 'ativushub' : 'paradise';
     }
-    if (!ativushubEnabled && ghostspayEnabled) return 'ghostspay';
-    if (!ativushubEnabled && sunizeEnabled) return 'sunize';
-    if (!ativushubEnabled && paradiseEnabled) return 'paradise';
+    
+    if (atomopayEnabled) return 'atomopay';
+    if (!sunizeEnabled && ghostspayEnabled) return 'ghostspay';
+    if (!sunizeEnabled && paradiseEnabled) return 'paradise';
+    if (sunizeEnabled) return 'sunize';
     return 'ativushub';
 }
 
@@ -73,6 +92,10 @@ function hasSunizeCredentials(config = {}) {
 
 function hasParadiseCredentials(config = {}) {
     return Boolean(String(config.apiKey || '').trim());
+}
+
+function hasAtomopayCredentials(config = {}) {
+    return Boolean(String(config.apiToken || '').trim());
 }
 
 function toE164Phone(value = '') {
@@ -391,6 +414,37 @@ function resolveParadiseResponse(data = {}) {
     };
 }
 
+function resolveAtomopayResponse(data = {}) {
+    const root = asObject(data);
+    const txid = pickText(root.transaction_id, root.id);
+    const externalId = pickText(root.external_id, root.reference);
+    const paymentCode = pickText(root.payment_code, root.pix_payload, root.pix_code);
+    const qrRaw = pickText(root.qrcode, root.qr_code_base64, root.qr_code);
+    const qrUrl = pickText(root.qrcode_url, root.qr_code_url);
+    const status = pickText(root.status, root.raw_status);
+
+    let paymentCodeBase64 = '';
+    let paymentQrUrl = '';
+    if (qrUrl) {
+        paymentQrUrl = qrUrl;
+    } else if (qrRaw) {
+        if (/^https?:\/\//i.test(qrRaw) || qrRaw.startsWith('data:image')) {
+            paymentQrUrl = qrRaw;
+        } else {
+            paymentCodeBase64 = qrRaw;
+        }
+    }
+
+    return {
+        txid: String(txid || '').trim(),
+        paymentCode: String(paymentCode || '').trim(),
+        paymentCodeBase64: String(paymentCodeBase64 || '').trim(),
+        paymentQrUrl: String(paymentQrUrl || '').trim(),
+        status: String(status || '').trim(),
+        externalId: String(externalId || '').trim()
+    };
+}
+
 function resolveAtivushubStatusResponse(data = {}) {
     const root = asObject(data);
     const nested = asObject(root.data);
@@ -610,6 +664,19 @@ async function hydratePixVisualByGateway(gateway, gatewayConfig, txid) {
             data: {}
         }));
         if (response?.ok) return resolveParadiseResponse(data || {});
+        return { paymentCode: '', paymentCodeBase64: '', paymentQrUrl: '', status: '', externalId: '' };
+    }
+
+    if (gateway === 'atomopay') {
+        const quickConfig = {
+            ...gatewayConfig,
+            timeoutMs: Math.max(1200, Math.min(Number(gatewayConfig?.timeoutMs || 12000), 3500))
+        };
+        const { response, data } = await requestAtomopayStatus(quickConfig, txid).catch(() => ({
+            response: { ok: false },
+            data: {}
+        }));
+        if (response?.ok) return resolveAtomopayResponse(data || {});
         return { paymentCode: '', paymentCodeBase64: '', paymentQrUrl: '', status: '', externalId: '' };
     }
 
@@ -1214,6 +1281,65 @@ module.exports = async (req, res) => {
                         statusRaw = statusRaw || fromStatus.status;
                     }
                 }
+            } else if (gateway === 'atomopay') {
+                if (!hasAtomopayCredentials(gatewayConfig)) {
+                    createInflightError = new Error('atomopay_missing_credentials');
+                    return res.status(500).json({ error: 'Credenciais Atomopay nao configuradas.' });
+                }
+
+                const atomopayReferenceBase = upsellEnabled ? `${orderId}-upsell` : orderId;
+                externalId = `${atomopayReferenceBase}-${Date.now()}`;
+
+                const atomopayPayload = {
+                    amount: Math.max(1, Math.round(totalAmount * 100)),
+                    payment_method: 'pix',
+                    customer: {
+                        name,
+                        email,
+                        document: cpf,
+                        phone
+                    },
+                    expire_in_days: 1,
+                    transaction_origin: 'api',
+                    postback_url: resolveAtomopayPostbackUrl(req, gatewayConfig),
+                    metadata: {
+                        gateway: 'atomopay',
+                        orderId,
+                        sessionId: sessionId || orderId,
+                        utm_source: rawBody?.utm?.utm_source || '',
+                        utm_medium: rawBody?.utm?.utm_medium || '',
+                        utm_campaign: rawBody?.utm?.utm_campaign || '',
+                        utm_term: rawBody?.utm?.utm_term || '',
+                        utm_content: rawBody?.utm?.utm_content || '',
+                        src: rawBody?.utm?.src || '',
+                        sck: rawBody?.utm?.sck || '',
+                        fbclid: rawBody?.utm?.fbclid || rawBody?.fbclid || '',
+                        gclid: rawBody?.utm?.gclid || '',
+                        ttclid: rawBody?.utm?.ttclid || ''
+                    }
+                };
+
+                if (String(gatewayConfig.offerHash || '').trim()) {
+                    atomopayPayload.offer_hash = String(gatewayConfig.offerHash).trim();
+                }
+
+                ({ response, data } = await requestAtomopayCreate(gatewayConfig, atomopayPayload));
+                if (!response?.ok) {
+                    createInflightError = new Error('atomopay_create_failed');
+                    return res.status(response?.status || 502).json({
+                        error: 'Falha ao gerar o PIX.',
+                        detail: data
+                    });
+                }
+
+                const atomopayData = resolveAtomopayResponse(data);
+                txid = atomopayData.txid;
+                paymentCode = atomopayData.paymentCode;
+                paymentCodeBase64 = atomopayData.paymentCodeBase64;
+                paymentQrUrl = atomopayData.paymentQrUrl;
+                statusRaw = atomopayData.status;
+                externalId = atomopayData.externalId || externalId;
+
             } else {
                 const ativusAuthConfigured = Boolean(
                     String(gatewayConfig.apiKeyBase64 || '').trim() ||

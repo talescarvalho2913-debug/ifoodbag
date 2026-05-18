@@ -7,6 +7,9 @@ const {
     requestTransactionByReference: requestParadiseByReference
 } = require('../../lib/paradise-provider');
 const {
+    requestTransactionById: requestAtomopayStatus
+} = require('../../lib/atomopay-provider');
+const {
     normalizeGatewayId,
     resolveGatewayFromPayload
 } = require('../../lib/payment-gateway-config');
@@ -44,6 +47,14 @@ const {
     isParadiseRefusedStatus,
     mapParadiseStatusToUtmify
 } = require('../../lib/paradise-status');
+const {
+    getAtomopayStatus,
+    getAtomopayUpdatedAt,
+    isAtomopayPaidStatus,
+    isAtomopayRefundedStatus,
+    isAtomopayRefusedStatus,
+    mapAtomopayStatusToUtmify
+} = require('../../lib/atomopay-status');
 const {
     getLeadByPixTxid,
     getLeadBySessionId,
@@ -128,6 +139,7 @@ function extractPixFieldsForStatus(gateway, payload = {}) {
     const isGhost = gateway === 'ghostspay';
     const isSunize = gateway === 'sunize';
     const isParadise = gateway === 'paradise';
+    const isAtomopay = gateway === 'atomopay';
     let paymentCode = '';
     let qrRaw = '';
     let paymentQrUrl = '';
@@ -206,6 +218,10 @@ function extractPixFieldsForStatus(gateway, payload = {}) {
             nested.qrcode_base64,
             nested.qrCodeBase64
         );
+    } else if (isAtomopay) {
+        paymentCode = pickText(root.payment_code, root.pix_payload, root.pix_code);
+        qrRaw = pickText(root.qrcode, root.qr_code_base64, root.qr_code);
+        paymentQrUrl = pickText(root.qrcode_url, root.qr_code_url);
     } else {
         paymentCode = pickText(root.paymentCode, root.paymentcode, nested.paymentCode, nested.paymentcode);
         qrRaw = pickText(root.paymentCodeBase64, root.paymentcodebase64, nested.paymentCodeBase64, nested.paymentcodebase64);
@@ -251,6 +267,9 @@ function mapGatewayStatusToFrontend(gateway, statusRaw) {
     }
     if (gateway === 'paradise') {
         return mapUtmifyStatusToFrontend(mapParadiseStatusToUtmify(statusRaw));
+    }
+    if (gateway === 'atomopay') {
+        return mapUtmifyStatusToFrontend(mapAtomopayStatusToUtmify(statusRaw));
     }
     return mapUtmifyStatusToFrontend(mapAtivusStatusToUtmify(statusRaw));
 }
@@ -329,7 +348,11 @@ function resolveStatusGateway(body = {}, leadData = null, payments = {}) {
     const ghostspayEnabled = payments?.gateways?.ghostspay?.enabled === true;
     const sunizeEnabled = payments?.gateways?.sunize?.enabled === true;
     const paradiseEnabled = payments?.gateways?.paradise?.enabled === true;
+    const atomopayEnabled = payments?.gateways?.atomopay?.enabled === true;
     const requested = normalizeGatewayId(body.gateway || body.paymentGateway || body.provider || '');
+    if (requested === 'atomopay' && atomopayEnabled) {
+        return 'atomopay';
+    }
     if (requested === 'ghostspay' && ghostspayEnabled) {
         return 'ghostspay';
     }
@@ -338,6 +361,9 @@ function resolveStatusGateway(body = {}, leadData = null, payments = {}) {
     }
     if (requested === 'paradise' && paradiseEnabled) {
         return 'paradise';
+    }
+    if (requested === 'ativushub' && !ativushubEnabled && atomopayEnabled) {
+        return 'atomopay';
     }
     if (requested === 'ativushub' && !ativushubEnabled && ghostspayEnabled) {
         return 'ghostspay';
@@ -351,6 +377,9 @@ function resolveStatusGateway(body = {}, leadData = null, payments = {}) {
 
     const payload = asObject(leadData?.payload);
     const fromLead = resolveGatewayFromPayload(payload, payments.activeGateway || 'ativushub');
+    if (fromLead === 'atomopay' && atomopayEnabled) {
+        return 'atomopay';
+    }
     if (fromLead === 'ghostspay' && ghostspayEnabled) {
         return 'ghostspay';
     }
@@ -359,6 +388,9 @@ function resolveStatusGateway(body = {}, leadData = null, payments = {}) {
     }
     if (fromLead === 'paradise' && paradiseEnabled) {
         return 'paradise';
+    }
+    if (!ativushubEnabled && atomopayEnabled) {
+        return 'atomopay';
     }
     if (!ativushubEnabled && ghostspayEnabled) {
         return 'ghostspay';
@@ -579,6 +611,35 @@ module.exports = async (req, res) => {
             toIsoDate(data?.updated_at) ||
             new Date().toISOString();
         ({ paymentCode, paymentCodeBase64, paymentQrUrl } = extractPixFieldsForStatus(gateway, data));
+    } else if (gateway === 'atomopay') {
+        ({ response, data } = await requestAtomopayStatus(statusGatewayConfig, txid));
+        if (!response?.ok) {
+            const status = Number(response?.status || 0);
+            res.status(status === 404 ? 200 : 502).json({
+                ok: status === 404,
+                status: leadStatus.status || 'waiting_payment',
+                statusRaw: leadStatus.statusRaw || '',
+                txid,
+                gateway,
+                source: 'database_fallback',
+                detail: data?.error || data?.message || ''
+            });
+            return;
+        }
+
+        statusRaw = getAtomopayStatus(data);
+        const mapped = mapAtomopayStatusToUtmify(statusRaw);
+        nextStatus = isAtomopayPaidStatus(statusRaw)
+            ? 'paid'
+            : isAtomopayRefundedStatus(statusRaw)
+                ? 'refunded'
+                : isAtomopayRefusedStatus(statusRaw)
+                    ? 'refused'
+                    : mapUtmifyStatusToFrontend(mapped);
+        changedAtIso =
+            toIsoDate(getAtomopayUpdatedAt(data)) ||
+            new Date().toISOString();
+        ({ paymentCode, paymentCodeBase64, paymentQrUrl } = extractPixFieldsForStatus(gateway, data));
     } else {
         ({ response, data } = await requestAtivushubStatus(statusGatewayConfig, txid));
         if (!response?.ok) {
@@ -792,13 +853,25 @@ module.exports = async (req, res) => {
 
         let shouldProcessQueue = false;
 
-        const utmQueued = await enqueueDispatch({
+        const utmJob = {
             channel: 'utmfy',
             eventName,
             dedupeKey: `utmfy:status:${gateway}:${dedupeBase}:${upsellEvent ? 'upsell' : 'base'}:${utmifyStatus}`,
             payload: utmPayload
-        }).catch(() => null);
-        if (utmQueued?.ok || utmQueued?.fallback) {
+        };
+        const pixelJob = {
+            channel: 'pixel',
+            eventName,
+            dedupeKey: `pixel:status:${gateway}:${dedupeBase}:${upsellEvent ? 'upsell' : 'base'}:${utmifyStatus}`,
+            payload: utmPayload
+        };
+
+        const [qUtm, qPix] = await Promise.all([
+            enqueueDispatch(utmJob).catch(() => null),
+            enqueueDispatch(pixelJob).catch(() => null)
+        ]);
+
+        if (qUtm?.ok || qUtm?.fallback || qPix?.ok || qPix?.fallback) {
             shouldProcessQueue = true;
         }
 

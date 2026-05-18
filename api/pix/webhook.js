@@ -206,6 +206,13 @@ function looksLikeParadiseWebhook(payload = {}) {
     return hasStatus && (hasTx || hasExternal) && (hasMarker || hasTx);
 }
 
+function looksLikeAtomopayWebhook(payload = {}) {
+    const hasTx = !!String(payload?.transaction_id || payload?.id || '').trim();
+    const hasStatus = !!String(payload?.status || '').trim();
+    const hasPixCode = !!String(payload?.payment_code || payload?.pix_payload || payload?.pix_code || '').trim();
+    return hasTx && hasStatus && (hasPixCode || !!payload?.offer_hash);
+}
+
 function normalizeMoneyToBrl(value) {
     if (value === undefined || value === null || value === '') return 0;
     const raw = String(value).trim();
@@ -222,6 +229,85 @@ function normalizeMoneyToBrl(value) {
 }
 
 function extractGatewayEvent(gateway, body = {}) {
+    if (gateway === 'atomopay') {
+        const root = asObject(body);
+        const txid = String(root.transaction_id || root.id || '').trim();
+        const statusRaw = String(root.status || root.raw_status || '').trim();
+        const utmifyStatus = (statusRaw === 'paid' || statusRaw === 'approved') ? 'paid' : statusRaw === 'refunded' ? 'refunded' : statusRaw;
+        const isPaid = statusRaw === 'paid' || statusRaw === 'approved';
+        const isRefunded = statusRaw === 'refunded' || statusRaw === 'reversed';
+        const isRefused = statusRaw === 'refused' || statusRaw === 'failed' || statusRaw === 'canceled' || statusRaw === 'cancelled';
+        // Atomopay amount is usually in cents
+        const rawAmount = Number(root.amount || 0);
+        const amount = rawAmount > 1000 ? rawAmount / 100 : rawAmount; 
+        const metadata = asObject(root.metadata);
+        const customer = asObject(root.customer);
+        const sessionOrderId = String(
+            root.external_id ||
+            root.reference ||
+            metadata?.orderId ||
+            ''
+        ).trim();
+        const statusChangedAt =
+            normalizeDate(root.updated_at) ||
+            normalizeDate(root.paid_at) ||
+            new Date().toISOString();
+        const pixCreatedAtFromGateway =
+            normalizeDate(root.created_at) ||
+            null;
+        const lastEvent = isPaid ? 'pix_confirmed' : isRefunded ? 'pix_refunded' : isRefused ? 'pix_refused' : 'pix_pending';
+        const gatewayFee = normalizeMoneyToBrl(root.fee || 0);
+        const userCommission = Math.max(0, Number((amount - gatewayFee).toFixed(2)));
+
+        return {
+            gateway,
+            txid,
+            statusRaw,
+            utmifyStatus,
+            isPaid,
+            isRefunded,
+            isRefused,
+            amount,
+            gatewayFee,
+            userCommission,
+            sessionOrderId,
+            statusChangedAt,
+            pixCreatedAtFromGateway,
+            lastEvent,
+            webhookEventId: String(root.event_id || '').trim(),
+            fallbackIdentity: {
+                cpf: String(customer.document || '').trim(),
+                email: String(customer.email || '').trim(),
+                phone: String(customer.phone || '').trim()
+            },
+            fallbackPersonal: {
+                name: String(customer.name || '').trim(),
+                email: String(customer.email || '').trim(),
+                cpf: String(customer.document || '').trim(),
+                phone: String(customer.phone || '').trim()
+            },
+            fallbackAddress: {
+                street: '',
+                neighborhood: '',
+                city: '',
+                state: '',
+                cep: ''
+            },
+            fallbackUtm: {
+                utm_source: String(metadata?.utm_source || '').trim(),
+                utm_medium: String(metadata?.utm_medium || '').trim(),
+                utm_campaign: String(metadata?.utm_campaign || '').trim(),
+                utm_term: String(metadata?.utm_term || '').trim(),
+                utm_content: String(metadata?.utm_content || '').trim(),
+                src: String(metadata?.src || '').trim(),
+                sck: String(metadata?.sck || '').trim(),
+                fbclid: String(metadata?.fbclid || '').trim(),
+                gclid: String(metadata?.gclid || '').trim(),
+                ttclid: String(metadata?.ttclid || '').trim()
+            }
+        };
+    }
+
     if (gateway === 'sunize') {
         const txid = getSunizeTxid(body);
         const statusRaw = getSunizeStatus(body);
@@ -547,20 +633,25 @@ function resolveWebhookGateway(query = {}, body = {}, payments = {}) {
     const ghostspayEnabled = payments?.gateways?.ghostspay?.enabled === true;
     const sunizeEnabled = payments?.gateways?.sunize?.enabled === true;
     const paradiseEnabled = payments?.gateways?.paradise?.enabled === true;
+    const atomopayEnabled = payments?.gateways?.atomopay?.enabled === true;
     const requested = normalizeGatewayId(query.gateway || query.provider || body.gateway || body.provider);
+    if (requested === 'atomopay' && atomopayEnabled) return 'atomopay';
     if (requested === 'sunize' && sunizeEnabled) return 'sunize';
     if (requested === 'ghostspay' && ghostspayEnabled) return 'ghostspay';
     if (requested === 'paradise' && paradiseEnabled) return 'paradise';
+    if (looksLikeAtomopayWebhook(body) && atomopayEnabled) return 'atomopay';
     if (looksLikeSunizeWebhook(body) && sunizeEnabled) return 'sunize';
     if (looksLikeParadiseWebhook(body) && paradiseEnabled) return 'paradise';
     if (looksLikeGhostspayWebhook(body) && ghostspayEnabled) return 'ghostspay';
     if (looksLikeAtivusWebhook(body)) return 'ativushub';
 
     const active = normalizeGatewayId(payments.activeGateway || 'ativushub');
+    if (active === 'atomopay' && atomopayEnabled) return 'atomopay';
     if (active === 'ghostspay' && ghostspayEnabled) return 'ghostspay';
     if (active === 'sunize' && sunizeEnabled) return 'sunize';
     if (active === 'paradise' && paradiseEnabled) return 'paradise';
     if (active === 'ativushub' && ativushubEnabled) return 'ativushub';
+    if (atomopayEnabled) return 'atomopay';
     if (ghostspayEnabled) return 'ghostspay';
     if (sunizeEnabled) return 'sunize';
     if (paradiseEnabled) return 'paradise';
@@ -893,8 +984,19 @@ module.exports = async (req, res) => {
             dedupeKey: `utmfy:status:${gateway}:${dedupeBase}:${upsellEvent ? 'upsell' : 'base'}:${utmifyStatus}`,
             payload: utmPayload
         };
-        const queued = await enqueueDispatch(utmJob).catch(() => null);
-        if (queued?.ok || queued?.fallback) {
+        const pixelJob = {
+            channel: 'pixel',
+            eventName,
+            dedupeKey: `pixel:status:${gateway}:${dedupeBase}:${upsellEvent ? 'upsell' : 'base'}:${utmifyStatus}`,
+            payload: utmPayload
+        };
+
+        const [qUtm, qPix] = await Promise.all([
+            enqueueDispatch(utmJob).catch(() => null),
+            enqueueDispatch(pixelJob).catch(() => null)
+        ]);
+
+        if (qUtm?.ok || qUtm?.fallback || qPix?.ok || qPix?.fallback) {
             shouldProcessQueue = true;
         }
     }
