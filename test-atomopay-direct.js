@@ -9,22 +9,11 @@ async function test() {
     };
 
     const payload = {
-        amount: 1500,
-        offer_hash: '6qiwtppuic',
-        payment_method: 'pix',
-        cart: [
-            {
-                title: 'Bag do iFood',
-                product_hash: '6qiwtppuic',
-                operation_type: 1,
-                quantity: 1,
-                price: 1500
-            }
-        ],
-        customer: {
+        amount: 15.00,
+        personal: {
             name: 'Teste da Silva',
             email: 'teste@exemplo.com',
-            document: '12345678909',
+            cpf: '12345678909',
             phone: '11999999999'
         }
     };
