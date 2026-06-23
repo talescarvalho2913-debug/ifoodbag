@@ -192,10 +192,11 @@ p {
 
 /* Hero Image */
 .hero-image {
-    width: 100vw;
+    width: 100%;
+    max-width: 440px;
+    margin: 12px auto 20px;
     display: flex;
     justify-content: center;
-    margin: 0 calc(50% - 50vw) 0;
 }
 
 .hero-image img {
@@ -204,7 +205,6 @@ p {
     height: auto;
     object-fit: contain;
     object-position: center;
-    transform: scale(1.06);
 }
 
 /* Success Image */
