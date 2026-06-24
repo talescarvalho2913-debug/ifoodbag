@@ -662,6 +662,10 @@ body[data-page='success'] .success-reward-image {
     object-position: center;
 }
 
+body[data-page='success'] [data-reward-id='bag'] .success-reward-image {
+    transform: scale(1.25);
+}
+
 body[data-page='success'] [data-reward-id='kit_entregador'] .success-reward-media {
     min-height: 176px;
 }
