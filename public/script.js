@@ -116,7 +116,7 @@ const REWARD_CATALOG = {
     bag: {
         id: 'bag',
         name: 'Bag do iFood',
-        asset: 'assets/bagfoto.webp',
+        asset: 'assets/bagfoto.jpg',
         successOriginalPrice: 149.9,
         successDisplayPrice: 0,
         checkoutExtraPrice: 0,
@@ -777,7 +777,7 @@ function ensureCouponModalElements() {
             <div id="coupon-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="coupon-title">
                 <div class="modal-card">
                     <div class="coupon-hero">
-                        <img src="/assets/bagfoto.webp" alt="Bag iFood com desconto">
+                        <img src="/assets/bagfoto.jpg" alt="Bag iFood com desconto">
                     </div>
                     <span id="coupon-badge" class="modal-badge">Cupom exclusivo</span>
                     <h3 id="coupon-title">Desconto liberado no frete</h3>
