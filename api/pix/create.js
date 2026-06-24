@@ -999,7 +999,7 @@ module.exports = async (req, res) => {
                 enqueueDispatch(reusablePixelJob).catch(() => null)
             ]);
             if (utmQueued?.ok || utmQueued?.fallback || pixelQueued?.ok || pixelQueued?.fallback) {
-                processDispatchQueue(6).catch(() => null);
+                await processDispatchQueue(6).catch(() => null);
             }
             return res.status(200).json(reusable);
         }
@@ -1627,18 +1627,15 @@ module.exports = async (req, res) => {
                 rewardName: normalizedReward.name,
                 rewardExtraPrice
             };
+            // Jobs are enqueued before response; queue processing runs synchronously to ensure Vercel does not terminate execution.
+            if (shouldProcessQueue) {
+                await processDispatchQueue(12).catch((error) => {
+                    console.error('[pix] queue process error', { message: error?.message || String(error) });
+                });
+            }
+
             createInflightResult = responsePayload;
             res.status(200).json(responsePayload);
-
-            // Jobs are enqueued before response; queue processing runs asynchronously.
-            (async () => {
-                if (shouldProcessQueue) {
-                    await processDispatchQueue(12).catch(() => null);
-                }
-            })().catch((error) => {
-                console.error('[pix] side effect error', { message: error?.message || String(error) });
-            });
-
             return;
         } finally {
             if (createInflightEntry) {
