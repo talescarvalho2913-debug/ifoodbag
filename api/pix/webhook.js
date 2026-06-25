@@ -208,7 +208,7 @@ function looksLikeParadiseWebhook(payload = {}) {
 
 function looksLikeAtomopayWebhook(payload = {}) {
     const hasTx = !!String(payload?.transaction_id || payload?.id || '').trim();
-    const hasStatus = !!String(payload?.status || '').trim();
+    const hasStatus = !!String(payload?.status || payload?.payment_status || '').trim();
     const hasPixCode = !!String(payload?.payment_code || payload?.pix_payload || payload?.pix_code || '').trim();
     return hasTx && hasStatus && (hasPixCode || !!payload?.offer_hash);
 }
@@ -232,7 +232,7 @@ function extractGatewayEvent(gateway, body = {}) {
     if (gateway === 'atomopay') {
         const root = asObject(body);
         const txid = String(root.transaction_id || root.id || '').trim();
-        const statusRaw = String(root.status || root.raw_status || '').trim();
+        const statusRaw = String(root.status || root.payment_status || root.raw_status || '').trim();
         const utmifyStatus = (statusRaw === 'paid' || statusRaw === 'approved') ? 'paid' : statusRaw === 'refunded' ? 'refunded' : statusRaw;
         const isPaid = statusRaw === 'paid' || statusRaw === 'approved';
         const isRefunded = statusRaw === 'refunded' || statusRaw === 'reversed';
