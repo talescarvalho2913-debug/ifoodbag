@@ -663,7 +663,7 @@ body[data-page='success'] .success-reward-image {
 }
 
 body[data-page='success'] [data-reward-id='bag'] .success-reward-image {
-    transform: scale(1.22) translateY(-12px);
+    transform: scale(0.95);
 }
 
 body[data-page='success'] [data-reward-id='kit_entregador'] .success-reward-media {
