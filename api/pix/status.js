@@ -832,9 +832,9 @@ module.exports = async (req, res) => {
                 utm_campaign: latestLead.utm_campaign,
                 utm_term: latestLead.utm_term,
                 utm_content: latestLead.utm_content,
-                gclid: latestLead.gclid,
-                fbclid: latestLead.fbclid,
-                ttclid: latestLead.ttclid,
+                gclid: leadUtm.gclid || latestLead.gclid,
+                fbclid: leadUtm.fbclid || latestLead.fbclid,
+                ttclid: leadUtm.ttclid || latestLead.ttclid,
                 src: leadUtm.src,
                 sck: leadUtm.sck
             } : leadUtm,

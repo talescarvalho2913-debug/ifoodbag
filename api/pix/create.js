@@ -418,7 +418,7 @@ function resolveAtomopayResponse(data = {}) {
     const root = asObject(data);
     const pix = asObject(root.pix);
     
-    const txid = pickText(root.transaction, root.hash, root.transaction_id, root.id);
+    const txid = pickText(root.transaction_id, root.id, root.transaction, root.hash);
     const externalId = pickText(root.external_id, root.reference);
     
     const paymentCode = pickText(pix.pix_qr_code, root.payment_code, root.pix_payload, root.pix_code);

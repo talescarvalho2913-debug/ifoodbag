@@ -241,11 +241,13 @@ function extractGatewayEvent(gateway, body = {}) {
         const rawAmount = Number(root.amount || 0);
         const amount = rawAmount > 1000 ? rawAmount / 100 : rawAmount; 
         const metadata = asObject(root.metadata);
+        const tracking = asObject(root.tracking);
         const customer = asObject(root.customer);
         const sessionOrderId = String(
             root.external_id ||
             root.reference ||
             metadata?.orderId ||
+            tracking?.orderId ||
             ''
         ).trim();
         const statusChangedAt =
@@ -294,16 +296,16 @@ function extractGatewayEvent(gateway, body = {}) {
                 cep: ''
             },
             fallbackUtm: {
-                utm_source: String(metadata?.utm_source || '').trim(),
-                utm_medium: String(metadata?.utm_medium || '').trim(),
-                utm_campaign: String(metadata?.utm_campaign || '').trim(),
-                utm_term: String(metadata?.utm_term || '').trim(),
-                utm_content: String(metadata?.utm_content || '').trim(),
-                src: String(metadata?.src || '').trim(),
-                sck: String(metadata?.sck || '').trim(),
-                fbclid: String(metadata?.fbclid || '').trim(),
-                gclid: String(metadata?.gclid || '').trim(),
-                ttclid: String(metadata?.ttclid || '').trim()
+                utm_source: String(tracking?.utm_source || metadata?.utm_source || root?.utm_source || root?.src || '').trim(),
+                utm_medium: String(tracking?.utm_medium || metadata?.utm_medium || root?.utm_medium || '').trim(),
+                utm_campaign: String(tracking?.utm_campaign || metadata?.utm_campaign || root?.utm_campaign || root?.campaign || '').trim(),
+                utm_term: String(tracking?.utm_term || metadata?.utm_term || root?.utm_term || '').trim(),
+                utm_content: String(tracking?.utm_content || metadata?.utm_content || root?.utm_content || root?.adset || '').trim(),
+                src: String(tracking?.src || metadata?.src || root?.src || '').trim(),
+                sck: String(tracking?.sck || metadata?.sck || root?.sck || '').trim(),
+                fbclid: String(tracking?.fbclid || metadata?.fbclid || root?.fbclid || '').trim(),
+                gclid: String(tracking?.gclid || metadata?.gclid || root?.gclid || '').trim(),
+                ttclid: String(tracking?.ttclid || metadata?.ttclid || root?.ttclid || '').trim()
             }
         };
     }
@@ -959,9 +961,9 @@ module.exports = async (req, res) => {
                 utm_campaign: leadData.utm_campaign,
                 utm_term: leadData.utm_term,
                 utm_content: leadData.utm_content,
-                gclid: leadData.gclid,
-                fbclid: leadData.fbclid,
-                ttclid: leadData.ttclid,
+                gclid: leadUtm.gclid || leadData.gclid,
+                fbclid: leadUtm.fbclid || leadData.fbclid,
+                ttclid: leadUtm.ttclid || leadData.ttclid,
                 src: leadUtm.src,
                 sck: leadUtm.sck
             } : evt.fallbackUtm,
