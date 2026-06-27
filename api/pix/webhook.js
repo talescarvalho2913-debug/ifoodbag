@@ -61,11 +61,15 @@ function normalizeDate(value) {
         const d = new Date(ms);
         return Number.isNaN(d.getTime()) ? null : d.toISOString();
     }
-    const str = String(value || '').trim();
+    let str = String(value || '').trim();
     if (!str) return null;
     if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(str)) {
-        const d = new Date(str.replace(' ', 'T'));
-        if (!Number.isNaN(d.getTime())) return d.toISOString();
+        str = str.replace(' ', 'T');
+    }
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?$/.test(str)) {
+        str = str + '-03:00';
+    } else if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+        str = str + 'T00:00:00-03:00';
     }
     const d = new Date(str);
     return Number.isNaN(d.getTime()) ? null : d.toISOString();
