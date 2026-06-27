@@ -839,9 +839,9 @@ module.exports = async (req, res) => {
                 sck: leadUtm.sck
             } : leadUtm,
             payload: data,
-            client_ip: req?.headers?.['x-forwarded-for']
+            client_ip: latestLead?.client_ip || (req?.headers?.['x-forwarded-for']
                 ? String(req.headers['x-forwarded-for']).split(',')[0].trim()
-                : req?.socket?.remoteAddress || '',
+                : req?.socket?.remoteAddress || ''),
             user_agent: req?.headers?.['user-agent'] || '',
             createdAt: latestPayload?.pixCreatedAt || latestLead?.created_at || changedAtIso,
             approvedDate: nextStatus === 'paid' ? (latestPayload?.pixPaidAt || changedAtIso) : null,
